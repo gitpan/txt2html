@@ -494,6 +494,14 @@ The name of the default "system" link dictionary.
 How many spaces equal a tab?
 (default: 8)
 
+=item table_type
+    
+    table_type=>{ ALIGN=>0, PGSQL=>0, BORDER=>1, DELIM=>0 }
+
+This determines which types of tables will be recognised when "make_tables"
+is true.  The possible types are ALIGN, PGSQL, BORDER and DELIM.
+(default: all types are true)
+
 =item title
 
     title=>I<title>
@@ -603,7 +611,7 @@ BEGIN {
   run_txt2html
 );
 $PROG = 'HTML::TextToHTML';
-$VERSION = '2.10';
+$VERSION = '2.20';
 
 #------------------------------------------------------------------------
 use constant TEXT_TO_HTML => "TEXT_TO_HTML";
@@ -654,6 +662,13 @@ use vars qw($OL $UL $DL);
 $OL = 1;
 $UL = 2;
 $DL = 3;
+
+# Constants for table types
+use vars qw($TAB_ALIGN $TAB_PGSQL $TAB_BORDER $TAB_DELIM);
+$TAB_ALIGN = 1;
+$TAB_PGSQL = 2;
+$TAB_BORDER = 3;
+$TAB_DELIM = 4;
 
 # Character entity names
 use vars qw(%char_entities %char_entities2);
@@ -878,6 +893,14 @@ sub args {
 				$self->{infile} = [];
 			    } else {
 				push @{$self->{infile}}, $val;
+			    }
+			} elsif ($arg eq 'table_type') {
+			    # hash
+			    if ($val eq 'CLEAR') {
+				$self->{$arg} = {};
+			    } else {
+				my ($f1, $v1) = split(/=/, $val, 2);
+				$self->{$arg}->{$f1} = $v1;
 			    }
 			} else {
 			    $self->{$arg} = $val;
@@ -1577,6 +1600,12 @@ sub init_our_data ($) {
     $self->{style_url} = '';
     $self->{system_link_dict} = '/usr/share/txt2html/txt2html.dict';
     $self->{tab_width} = 8;
+    $self->{table_type} = {
+	ALIGN => 1,
+	PGSQL => 1,
+	BORDER => 1,
+	DELIM => 1,
+    };
     $self->{title} = '';
     $self->{titlefirst} = 0;
     $self->{underline_length_tolerance} = 1;
@@ -2439,11 +2468,46 @@ sub is_table ($%) {
 	para_len=>0,
 	@_
     );
-    return $self->is_spaced_table(%args);
+    my $table_type = $self->get_table_type(%args);
+
+    return ($table_type != 0);
 }
 
-# check if the given paragraph-array is a spaced table
-sub is_spaced_table ($%) {
+# figure out the table type of this table, if any
+sub get_table_type ($%) {
+    my $self     = shift;
+    my %args = (
+	rows_ref=>undef,
+	para_len=>0,
+	@_
+    );
+    my $table_type = 0;
+    if ($self->{table_type}->{DELIM}
+	&& $self->is_delim_table(%args))
+    {
+	$table_type = $TAB_DELIM;
+    }
+    elsif ($self->{table_type}->{ALIGN}
+	&& $self->is_aligned_table(%args))
+    {
+	$table_type = $TAB_ALIGN;
+    }
+    elsif ($self->{table_type}->{PGSQL}
+	&& $self->is_pgsql_table(%args))
+    {
+	$table_type = $TAB_PGSQL;
+    }
+    elsif ($self->{table_type}->{BORDER}
+	&& $self->is_border_table(%args))
+    {
+	$table_type = $TAB_BORDER;
+    }
+
+    return $table_type;
+}
+
+# check if the given paragraph-array is an aligned table
+sub is_aligned_table ($%) {
     my $self     = shift;
     my %args = (
 	rows_ref=>undef,
@@ -2488,6 +2552,179 @@ sub is_spaced_table ($%) {
     }
 }
 
+sub is_pgsql_table ($%) {
+    my $self     = shift;
+    my %args = (
+	rows_ref=>undef,
+	para_len=>0,
+	@_
+    );
+    my $rows_ref = $args{rows_ref};
+    my $para_len = $args{para_len};
+
+    # a PGSQL table can start with an optional table-caption,
+    # then it has a row of column headings separated by |
+    # then it has a row of ------+-----
+    # then it has one or more rows of column values separated by |
+    # then it has a row-count (N rows)
+    # Thus it must have at least 4 rows.
+    if (@{$rows_ref} < 4) {
+	return 0;
+    }
+
+    my @rows = @{$rows_ref};
+    if ($rows[0] !~ /\|/ && $rows[0] =~ /^\s*\w+/) # possible caption
+    {
+	shift @rows;
+    }
+    if (@rows < 4) {
+	return 0;
+    }
+    if ($rows[0] !~ /^\s*\w+\s+\|\s+/) # Colname |
+    {
+	return 0;
+    }
+    if ($rows[1] !~ /^\s*[-]+[+][-]+/) # ----+----
+    {
+	return 0;
+    }
+    if ($rows[2] !~ /^\s*[^|]*\s+\|\s+/) # value |
+    {
+	return 0;
+    }
+    # check the last row for rowcount
+    if ($rows[$#rows] !~ /\(\d+\s+rows\)/)
+    {
+	return 0;
+    }
+
+    return 1;
+}
+
+sub is_border_table ($%) {
+    my $self     = shift;
+    my %args = (
+	rows_ref=>undef,
+	para_len=>0,
+	@_
+    );
+    my $rows_ref = $args{rows_ref};
+    my $para_len = $args{para_len};
+
+    # a BORDER table can start with an optional table-caption,
+    # then it has a row of +------+-----+
+    # then it has a row of column headings separated by |
+    # then it has a row of +------+-----+
+    # then it has one or more rows of column values separated by |
+    # then it has a row of +------+-----+
+    # Thus it must have at least 5 rows.
+    # And note that it could be indented with spaces
+    if (@{$rows_ref} < 5) {
+	return 0;
+    }
+
+    my @rows = @{$rows_ref};
+    if ($rows[0] !~ /\|/ && $rows[0] =~ /^\s*\w+/) # possible caption
+    {
+	shift @rows;
+    }
+    if (@rows < 5) {
+	return 0;
+    }
+    if ($rows[0] !~ /^\s*[+][-]+[+][-]+[+][-+]*$/) # +----+----+
+    {
+	return 0;
+    }
+    if ($rows[1] !~ /^\s*\|\s*\w+\s+\|\s+.*\|$/) # | Colname |
+    {
+	return 0;
+    }
+    if ($rows[2] !~ /^\s*[+][-]+[+][-]+[+][-+]*$/) # +----+----+
+    {
+	return 0;
+    }
+    if ($rows[3] !~ /^\s*\|\s*[^|]*\s+\|\s+.*\|$/) # | value |
+    {
+	return 0;
+    }
+    # check the last row for +------+------+
+    if ($rows[$#rows] !~ /^\s*[+][-]+[+][-]+[+][-+]*$/) # +----+----+
+    {
+	return 0;
+    }
+
+    return 1;
+} # is_border_table
+
+sub is_delim_table ($%) {
+    my $self     = shift;
+    my %args = (
+	rows_ref=>undef,
+	para_len=>0,
+	@_
+    );
+    my $rows_ref = $args{rows_ref};
+    my $para_len = $args{para_len};
+
+    # a DELIM table can start with an optional table-caption,
+    # then it has at least two rows which start and end and are
+    # punctuated by a non-alphanumeric delimiter.
+    #
+    # | val1 | val2 |
+    # | val3 | val4 |
+    #
+    # And note that it could be indented with spaces
+    if (@{$rows_ref} < 2) {
+	return 0;
+    }
+
+    my @rows = @{$rows_ref};
+    if ($rows[0] !~ /\|/ && $rows[0] =~ /^\s*\w+/) # possible caption
+    {
+	shift @rows;
+    }
+    if (@rows < 2) {
+	return 0;
+    }
+    # figure out if the row starts with a possible delimiter
+    my $delim = '';
+    if ($rows[0] =~ /^\s*([^a-zA-Z0-9])/)
+    {
+	$delim = $1;
+    }
+    else
+    {
+	return 0;
+    }
+    # There needs to be at least three delimiters in the row
+    my @all_delims = ($rows[0] =~ /[${delim}]/g);
+    my $total_num_delims = @all_delims;
+    if ($total_num_delims < 3)
+    {
+	return 0;
+    }
+    # All rows must start and end with the delimiter
+    # and have $total_num_delims number of them
+    foreach my $row (@rows)
+    {
+	if ($row !~ /^\s*[${delim}]/)
+	{
+	    return 0;
+	}
+	if ($row !~ /[${delim}]$/)
+	{
+	    return 0;
+	}
+	@all_delims = ($row =~ /[${delim}]/g);
+	if (@all_delims != $total_num_delims)
+	{
+	    return 0;
+	}
+    }
+
+    return 1;
+} # is_delim_table
+
 sub tablestuff ($%) {
     my $self     = shift;
     my %args = (
@@ -2495,10 +2732,22 @@ sub tablestuff ($%) {
 	para_len=>0,
 	@_
     );
-    return $self->make_spaced_table(%args);
+    my $table_type = $self->get_table_type(%args);
+    if ($table_type eq $TAB_ALIGN) {
+	return $self->make_aligned_table(%args);
+    }
+    if ($table_type eq $TAB_PGSQL) {
+	return $self->make_pgsql_table(%args);
+    }
+    if ($table_type eq $TAB_BORDER) {
+	return $self->make_border_table(%args);
+    }
+    if ($table_type eq $TAB_DELIM) {
+	return $self->make_delim_table(%args);
+    }
 } # tablestuff
 
-sub make_spaced_table ($%) {
+sub make_aligned_table ($%) {
     my $self     = shift;
     my %args = (
 	rows_ref=>undef,
@@ -2609,7 +2858,342 @@ sub make_spaced_table ($%) {
     else {
         return 0;
     }
-} # make_spaced_table
+} # make_aligned_table
+
+sub make_pgsql_table ($%) {
+    my $self     = shift;
+    my %args = (
+	rows_ref=>undef,
+	para_len=>0,
+	@_
+    );
+    my $rows_ref = $args{rows_ref};
+    my $para_len = $args{para_len};
+
+    # a PGSQL table can start with an optional table-caption,
+    # then it has a row of column headings separated by |
+    # then it has a row of ------+-----
+    # then it has one or more rows of column values separated by |
+    # then it has a row-count (N rows)
+    # Thus it must have at least 4 rows.
+    my @rows = @{$rows_ref};
+    my $caption = '';
+    if ($rows[0] !~ /\|/ && $rows[0] =~ /^\s*\w+/) # possible caption
+    {
+	$caption = shift @rows;
+    }
+    my @headings = split(/\s+\|\s+/, shift @rows);
+    # skip the ----+--- line
+    shift @rows;
+    # grab the N rows line
+    my $n_rows = pop @rows;
+
+    # now start making the table
+    my @tab_lines = ();
+    my $tag;
+    if ($self->{xhtml})
+    {
+	$tag = $self->get_tag('TABLE', inside_tag=>' border="1" summary=""');
+    }
+    else
+    {
+	$tag = $self->get_tag('TABLE', inside_tag=>' border="1"');
+    }
+    push @tab_lines, "$tag\n";
+    if ($caption) {
+	$caption =~ s/^\s+//;
+	$caption =~ s/\s+$//;
+	$tag = $self->get_tag('CAPTION');
+	$caption = $tag . $caption;
+	$tag = $self->get_tag('CAPTION', tag_type=>'end');
+	$caption .= $tag;
+	push @tab_lines, "$caption\n";
+    }
+    # table header
+    my $thead = '';
+    $tag = $self->get_tag('THEAD');
+    $thead .= $tag;
+    $tag = $self->get_tag('TR');
+    $thead .= $tag;
+    foreach my $col (@headings)
+    {
+	$col =~ s/^\s+//;
+	$col =~ s/\s+$//;
+	$tag = $self->get_tag('TH');
+	$thead .= $tag;
+	$thead .= $col;
+	$tag = $self->get_tag('TH', tag_type=>'end');
+	$thead .= $tag;
+    }
+    $tag = $self->get_tag('TR', tag_type=>'end');
+    $thead .= $tag;
+    $tag = $self->get_tag('THEAD', tag_type=>'end');
+    $thead .= $tag;
+    push @tab_lines, "${thead}\n";
+    $tag = $self->get_tag('TBODY');
+    push @tab_lines, "$tag\n";
+
+    # each row
+    foreach my $row (@rows)
+    {
+	my $this_row = '';
+	$tag = $self->get_tag('TR');
+	$this_row .= $tag;
+	my @cols = split(/\|/, $row);
+	foreach my $cell (@cols)
+	{
+	    $cell =~ s/^\s+//;
+	    $cell =~ s/\s+$//;
+	    if ($self->{escape_HTML_chars}) {
+		$cell = escape($cell);
+	    }
+	    if (!$cell)
+	    {
+		$cell = '&nbsp;';
+	    }
+	    $tag = $self->get_tag('TD');
+	    $this_row .= $tag;
+	    $this_row .= $cell;
+	    $tag = $self->get_tag('TD', tag_type=>'end');
+	    $this_row .= $tag;
+	}
+	$tag = $self->get_tag('TR', tag_type=>'end');
+	$this_row .= $tag;
+	push @tab_lines, "${this_row}\n";
+    }
+
+    # end the table
+    $tag = $self->get_tag('TBODY', tag_type=>'end');
+    push @tab_lines, "$tag\n";
+    $tag = $self->get_tag('TABLE', tag_type=>'end');
+    push @tab_lines, "$tag\n";
+
+    # and add the N rows line
+    $tag = $self->get_tag('P');
+    push @tab_lines, "${tag}${n_rows}\n";
+    if ($self->{xhtml})
+    {
+	$tag = $self->get_tag('P', tag_type=>'end');
+	$tab_lines[$#tab_lines] =~ s/\n/${tag}\n/;
+    }
+
+    # replace the rows
+    @{$rows_ref} = @tab_lines;
+} # make_pgsql_table
+
+sub make_border_table ($%) {
+    my $self     = shift;
+    my %args = (
+	rows_ref=>undef,
+	para_len=>0,
+	@_
+    );
+    my $rows_ref = $args{rows_ref};
+    my $para_len = $args{para_len};
+
+    # a BORDER table can start with an optional table-caption,
+    # then it has a row of +------+-----+
+    # then it has a row of column headings separated by |
+    # then it has a row of +------+-----+
+    # then it has one or more rows of column values separated by |
+    # then it has a row of +------+-----+
+    my @rows = @{$rows_ref};
+    my $caption = '';
+    if ($rows[0] !~ /\|/ && $rows[0] =~ /^\s*\w+/) # possible caption
+    {
+	$caption = shift @rows;
+    }
+    # skip the +----+---+ line
+    shift @rows;
+    # get the head row and cut off the start and end |
+    my $head_row = shift @rows;
+    $head_row =~ s/^\s*\|//;
+    $head_row =~ s/\|$//;
+    my @headings = split(/\s+\|\s+/, $head_row);
+    # skip the +----+---+ line
+    shift @rows;
+    # skip the last +----+---+ line
+    pop @rows;
+
+    # now start making the table
+    my @tab_lines = ();
+    my $tag;
+    if ($self->{xhtml})
+    {
+	$tag = $self->get_tag('TABLE', inside_tag=>' border="1" summary=""');
+    }
+    else
+    {
+	$tag = $self->get_tag('TABLE', inside_tag=>' border="1"');
+    }
+    push @tab_lines, "$tag\n";
+    if ($caption) {
+	$caption =~ s/^\s+//;
+	$caption =~ s/\s+$//;
+	$tag = $self->get_tag('CAPTION');
+	$caption = $tag . $caption;
+	$tag = $self->get_tag('CAPTION', tag_type=>'end');
+	$caption .= $tag;
+	push @tab_lines, "$caption\n";
+    }
+    # table header
+    my $thead = '';
+    $tag = $self->get_tag('THEAD');
+    $thead .= $tag;
+    $tag = $self->get_tag('TR');
+    $thead .= $tag;
+    foreach my $col (@headings)
+    {
+	$col =~ s/^\s+//;
+	$col =~ s/\s+$//;
+	$tag = $self->get_tag('TH');
+	$thead .= $tag;
+	$thead .= $col;
+	$tag = $self->get_tag('TH', tag_type=>'end');
+	$thead .= $tag;
+    }
+    $tag = $self->get_tag('TR', tag_type=>'end');
+    $thead .= $tag;
+    $tag = $self->get_tag('THEAD', tag_type=>'end');
+    $thead .= $tag;
+    push @tab_lines, "${thead}\n";
+    $tag = $self->get_tag('TBODY');
+    push @tab_lines, "$tag\n";
+
+    # each row
+    foreach my $row (@rows)
+    {
+	# cut off the start and end |
+	$row =~ s/^\s*\|//;
+	$row =~ s/\|$//;
+	my $this_row = '';
+	$tag = $self->get_tag('TR');
+	$this_row .= $tag;
+	my @cols = split(/\|/, $row);
+	foreach my $cell (@cols)
+	{
+	    $cell =~ s/^\s+//;
+	    $cell =~ s/\s+$//;
+	    if ($self->{escape_HTML_chars}) {
+		$cell = escape($cell);
+	    }
+	    if (!$cell)
+	    {
+		$cell = '&nbsp;';
+	    }
+	    $tag = $self->get_tag('TD');
+	    $this_row .= $tag;
+	    $this_row .= $cell;
+	    $tag = $self->get_tag('TD', tag_type=>'end');
+	    $this_row .= $tag;
+	}
+	$tag = $self->get_tag('TR', tag_type=>'end');
+	$this_row .= $tag;
+	push @tab_lines, "${this_row}\n";
+    }
+
+    # end the table
+    $tag = $self->get_tag('TBODY', tag_type=>'end');
+    push @tab_lines, "$tag\n";
+    $tag = $self->get_tag('TABLE', tag_type=>'end');
+    push @tab_lines, "$tag\n";
+
+    # replace the rows
+    @{$rows_ref} = @tab_lines;
+} # make_border_table
+
+sub make_delim_table ($%) {
+    my $self     = shift;
+    my %args = (
+	rows_ref=>undef,
+	para_len=>0,
+	@_
+    );
+    my $rows_ref = $args{rows_ref};
+    my $para_len = $args{para_len};
+
+    # a DELIM table can start with an optional table-caption,
+    # then it has at least two rows which start and end and are
+    # punctuated by a non-alphanumeric delimiter.
+    # A DELIM table has no table-header.
+    my @rows = @{$rows_ref};
+    my $caption = '';
+    if ($rows[0] !~ /\|/ && $rows[0] =~ /^\s*\w+/) # possible caption
+    {
+	$caption = shift @rows;
+    }
+    # figure out the delimiter
+    my $delim = '';
+    if ($rows[0] =~ /^\s*([^a-zA-Z0-9])/)
+    {
+	$delim = $1;
+    }
+    else
+    {
+	return 0;
+    }
+
+    # now start making the table
+    my @tab_lines = ();
+    my $tag;
+    if ($self->{xhtml})
+    {
+	$tag = $self->get_tag('TABLE', inside_tag=>' border="1" summary=""');
+    }
+    else
+    {
+	$tag = $self->get_tag('TABLE', inside_tag=>' border="1"');
+    }
+    push @tab_lines, "$tag\n";
+    if ($caption) {
+	$caption =~ s/^\s+//;
+	$caption =~ s/\s+$//;
+	$tag = $self->get_tag('CAPTION');
+	$caption = $tag . $caption;
+	$tag = $self->get_tag('CAPTION', tag_type=>'end');
+	$caption .= $tag;
+	push @tab_lines, "$caption\n";
+    }
+
+    # each row
+    foreach my $row (@rows)
+    {
+	# cut off the start and end delimiter
+	$row =~ s/^\s*[${delim}]//;
+	$row =~ s/[${delim}]$//;
+	my $this_row = '';
+	$tag = $self->get_tag('TR');
+	$this_row .= $tag;
+	my @cols = split(/[${delim}]/, $row);
+	foreach my $cell (@cols)
+	{
+	    $cell =~ s/^\s+//;
+	    $cell =~ s/\s+$//;
+	    if ($self->{escape_HTML_chars}) {
+		$cell = escape($cell);
+	    }
+	    if (!$cell)
+	    {
+		$cell = '&nbsp;';
+	    }
+	    $tag = $self->get_tag('TD');
+	    $this_row .= $tag;
+	    $this_row .= $cell;
+	    $tag = $self->get_tag('TD', tag_type=>'end');
+	    $this_row .= $tag;
+	}
+	$tag = $self->get_tag('TR', tag_type=>'end');
+	$this_row .= $tag;
+	push @tab_lines, "${this_row}\n";
+    }
+
+    # end the table
+    $tag = $self->get_tag('TABLE', tag_type=>'end');
+    push @tab_lines, "$tag\n";
+
+    # replace the rows
+    @{$rows_ref} = @tab_lines;
+} # make_delim_table
 
 # Returns true if the passed string is considered to be preformatted
 sub is_preformatted ($$) {
@@ -3701,6 +4285,11 @@ But the following does not have a header:
 
 Tables require a more rigid convention.  A table must be marked as a
 separate paragraph, that is, it must be surrounded by blank lines.
+Tables come in different types.  For a table to be parsed, its
+--table_type option must be on, and the --make_tables option must be true.
+
+B<ALIGN Table Type>
+
 Columns must be separated by two or more spaces (this prevents
 accidental incorrect recognition of a paragraph where interword spaces
 happen to line up).  If there are two or more rows in a paragraph and
@@ -3721,6 +4310,71 @@ becomes
 
 This guesses for each column whether it is intended to be left,
 centre or right aligned.
+
+B<BORDER Table Type>
+
+This table type has nice borders around it, and will be rendered
+with a border, like so:
+
+    +---------+---------+
+    | Column1 | Column2 |
+    +---------+---------+
+    | val1    | val2    |
+    | val3    | val3    |
+    +---------+---------+
+
+The above becomes
+
+    <TABLE border="1">
+    <THEAD><TR><TH>Column1</TH><TH>Column2</TH></TR></THEAD>
+    <TBODY>
+    <TR><TD>val1</TD><TD>val2</TD></TR>
+    <TR><TD>val3</TD><TD>val3</TD></TR>
+    </TBODY>
+    </TABLE>
+
+It can also have an optional caption at the start.
+
+         My Caption
+    +---------+---------+
+    | Column1 | Column2 |
+    +---------+---------+
+    | val1    | val2    |
+    | val3    | val3    |
+    +---------+---------+
+
+B<PGSQL Table Type>
+
+This format of table is what one gets from the output of a Postgresql
+query.
+
+     Column1 | Column2
+    ---------+---------
+     val1    | val2
+     val3    | val3
+    (2 rows)
+
+This can also have an optional caption at the start.
+This table is also rendered with a border and table-headers like
+the BORDER type.
+
+B<DELIM Table Type>
+
+This table type is delimited by non-alphanumeric characters, and has to
+have at least two rows and two columns before it's recognised as a table.
+
+This one is delimited by the '| character:
+
+    | val1  | val2  |
+    | val3  | val3  |
+
+But one can use almost any suitable character such as : # $ % + and so on.
+This is clever enough to figure out what you are using as the delimiter
+if you have your data set up like a table.  Note that the line has to
+both begin and end with the delimiter, as well as using it to separate
+values.
+
+This can also have an optional caption at the start.
 
 =head1 EXAMPLES
 

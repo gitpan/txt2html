@@ -3,7 +3,7 @@
 <html>
 <head>
 <title>txt2html/HTML::TextToHTML Sample Conversion</title>
-<meta name="generator" content="HTML::TextToHTML v2.10"/>
+<meta name="generator" content="HTML::TextToHTML v2.20"/>
 </head>
 <body>
 <p><a href="http://txt2html.sourceforge.net/">txt2html</a>/<a href="http://www.katspace.com/tools/text_to_html/">HTML::TextToHTML</a> Sample Conversion
@@ -161,9 +161,16 @@ documents look like.
   </li><li>One can also use the link-dictionary to define custom tags, for
    example using the star character to indicate <em>italics</em>.
 
-  </li><li>Now with Tables!  No need for fancy delimiters, this figures out
-   tables by looking at the layout, the spacing of the cells.
-  </li><li>Now with XHTML!  Turn on the --xhtml option and it will ensure that
+  </li><li>Recognises and parses tables of different types:
+  <ul>
+    <li>DELIM: A table determined by delimiters.
+    </li><li>ALIGN: No need for fancy delimiters, this figures out
+     a table by looking at the layout, the spacing of the cells.
+    </li><li>BORDER: has a nice border around the table
+    </li><li>PGSQL: the same format as Postgresql query results.
+
+  </li></ul>
+  </li><li>Also with XHTML!  Turn on the --xhtml option and it will ensure that
    all paragraphs and list items have end-tags, all tags are in
    lower-case, and the doctype is for XHTML.
 
@@ -236,7 +243,9 @@ starts, otherwise we don't know that it belongs to the definition.
 </dd></dl>
 <h4><a name="section_1_3_1_5">Examples of Tables</a></h4>
 
-<p>Here is a simple table:
+<h5><a name="section_1_3_1_5_1">ALIGN</a></h5>
+
+<p>Here is a simple ALIGN table:
 </p>
 <table summary="">
 <tr><td>-e</td><td>File exists.
@@ -244,7 +253,7 @@ starts, otherwise we don't know that it belongs to the definition.
 </td></tr><tr><td>-s</td><td>File has nonzero size (returns size).
 </td></tr>
 </table>
-<p>Here are some of the conditions of tables:
+<p>Here are some of the conditions of ALIGN tables:
 </p>
 <table summary="">
 <tr><td style="text-align: right;"><strong>Context:</strong></td><td>A table needs to be surrounded by blank lines.
@@ -258,14 +267,55 @@ starts, otherwise we don't know that it belongs to the definition.
 </td></tr><tr><td style="text-align: right;"><strong>Alignment:</strong></td><td>Alignment of cells is attempted to be preserved.
 </td></tr>
 </table>
-<p>Here's a three-column table:
+<h5><a name="section_1_3_1_5_2">BORDER</a></h5>
+
+<p>This is a table with a border.
 </p>
-<table summary="">
-<tr><td>Fred</td><td>Armstrong</td><td>52
-</td></tr><tr><td>George</td><td>Ningie</td><td>64
-</td></tr><tr><td>Sam</td><td>Jones</td><td>47
-</td></tr>
+<table border="1" summary="">
+<thead><tr><th>Food</th><th>Qty</th></tr></thead>
+<tbody>
+<tr><td>Bread</td><td>1</td></tr>
+<tr><td>Milk</td><td>1</td></tr>
+<tr><td>Oranges</td><td>3</td></tr>
+<tr><td>Apples</td><td>6</td></tr>
+</tbody>
 </table>
+
+<h5><a name="section_1_3_1_5_3">PGSQL</a></h5>
+
+<p>This is the same table like Postgresql would make it.
+</p>
+<table border="1" summary="">
+<thead><tr><th>Food</th><th>Qty</th></tr></thead>
+<tbody>
+<tr><td>Bread</td><td>1</td></tr>
+<tr><td>Milk</td><td>1</td></tr>
+<tr><td>Oranges</td><td>3</td></tr>
+<tr><td>Apples</td><td>6</td></tr>
+</tbody>
+</table>
+<p>        (4 rows)</p>
+
+
+<h5><a name="section_1_3_1_5_4">DELIM</a></h5>
+
+<p>A delimited table needs to have its delimiters at the start and end,
+just to be sure that this is a table.
+</p>
+<table border="1" summary="">
+<tr><td>Fred</td><td>Nurk</td><td>58</td></tr>
+<tr><td>George</td><td>Washington</td><td>62</td></tr>
+<tr><td>Mary</td><td>Quant</td><td>35</td></tr>
+</table>
+
+<p>And one can have almost any delimiter one wishes.
+</p>
+<table border="1" summary="">
+<tr><td>Darcy, Fitzwilliam</td><td>hero</td></tr>
+<tr><td>Bennet, Elizabeth</td><td>heroine</td></tr>
+<tr><td>Wickham, George</td><td>villain</td></tr>
+</table>
+
 <h1><a name="section_2">THINGS TO DO</a></h1>
 
 <p>There are some things which this module doesn't handle yet which
@@ -278,10 +328,8 @@ I would like to implement.
       does)
     </li><li>display the correct OL properties with CSS so as to preserve
       that information.
-  </li></ol>
-  </li><li>Perhaps it would be nice to have tables with borders,
-though I'm not sure how exactly to define them.
 
+  </li></ol>
 </li></ol>
 <hr/>
 

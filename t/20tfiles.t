@@ -2,7 +2,7 @@
 
 #########################
 
-use Test::More tests => 30;
+use Test::More tests => 40;
 use HTML::TextToHTML;
 
 #########################
@@ -389,3 +389,119 @@ ok($result, 'test file matches original example exactly');
 if ($result) {
     unlink('pre.html');
 }
+
+#
+# Tables
+#
+$conv = undef;
+$conv = new HTML::TextToHTML();
+
+$result = $conv->txt2html(
+system_link_dict=>"txt2html.dict",
+default_link_dict=>"",
+extract=>1,
+make_tables=>1,
+infile=>["tfiles/table-align.txt"],
+outfile=>"table-align.html",
+#debug=>1,
+#dict_debug=>15,
+);
+ok($result, 'converted table-align.txt');
+
+# compare the files
+$result = compare('tfiles/good_table-align.html', 'table-align.html');
+ok($result, 'test file matches original example exactly');
+if ($result) {
+    unlink('table-align.html');
+}
+
+$conv = undef;
+$conv = new HTML::TextToHTML();
+
+$result = $conv->txt2html(
+system_link_dict=>"txt2html.dict",
+default_link_dict=>"",
+extract=>1,
+make_tables=>1,
+infile=>["tfiles/table-pgsql.txt"],
+outfile=>"table-pgsql.html",
+#debug=>1,
+#dict_debug=>15,
+);
+ok($result, 'converted table-pgsql.txt');
+
+# compare the files
+$result = compare('tfiles/good_table-pgsql.html', 'table-pgsql.html');
+ok($result, 'test file matches original example exactly');
+if ($result) {
+    unlink('table-pgsql.html');
+}
+
+$conv = undef;
+$conv = new HTML::TextToHTML();
+
+$result = $conv->txt2html(
+system_link_dict=>"txt2html.dict",
+default_link_dict=>"",
+extract=>1,
+make_tables=>1,
+xhtml=>1,
+infile=>["tfiles/table-pgsql2.txt"],
+outfile=>"table-pgsql2.html",
+#debug=>1,
+#dict_debug=>15,
+);
+ok($result, 'converted table-pgsql2.txt');
+
+# compare the files
+$result = compare('tfiles/good_table-pgsql2.html', 'table-pgsql2.html');
+ok($result, 'test file matches original example exactly');
+if ($result) {
+    unlink('table-pgsql2.html');
+}
+
+$conv = undef;
+$conv = new HTML::TextToHTML();
+
+$result = $conv->txt2html(
+system_link_dict=>"txt2html.dict",
+default_link_dict=>"",
+extract=>1,
+make_tables=>1,
+infile=>["tfiles/table-border.txt"],
+outfile=>"table-border.html",
+#debug=>1,
+#dict_debug=>15,
+);
+ok($result, 'converted table-border.txt');
+
+# compare the files
+$result = compare('tfiles/good_table-border.html', 'table-border.html');
+ok($result, 'test file matches original example exactly');
+if ($result) {
+    unlink('table-border.html');
+}
+
+$conv = undef;
+$conv = new HTML::TextToHTML();
+
+$result = $conv->txt2html(
+system_link_dict=>"txt2html.dict",
+default_link_dict=>"",
+extract=>1,
+make_tables=>1,
+xhtml=>1,
+infile=>["tfiles/table-delim.txt"],
+outfile=>"table-delim.html",
+#debug=>1,
+#dict_debug=>15,
+);
+ok($result, 'converted table-delim.txt');
+
+# compare the files
+$result = compare('tfiles/good_table-delim.html', 'table-delim.html');
+ok($result, 'test file matches original example exactly');
+if ($result) {
+    unlink('table-delim.html');
+}
+

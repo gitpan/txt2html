@@ -2,7 +2,7 @@
 <HTML>
 <HEAD>
 <TITLE>txt2html/HTML::TextToHTML Sample Conversion</TITLE>
-<META NAME="generator" CONTENT="HTML::TextToHTML v2.10">
+<META NAME="generator" CONTENT="HTML::TextToHTML v2.20">
 </HEAD>
 <BODY>
 <P><A HREF="http://txt2html.sourceforge.net/">txt2html</A>/<A HREF="http://www.katspace.com/tools/text_to_html/">HTML::TextToHTML</A> Sample Conversion
@@ -160,9 +160,16 @@ documents look like.
   <LI>One can also use the link-dictionary to define custom tags, for
    example using the star character to indicate <EM>italics</EM>.
 
-  <LI>Now with Tables!  No need for fancy delimiters, this figures out
-   tables by looking at the layout, the spacing of the cells.
-  <LI>Now with XHTML!  Turn on the --xhtml option and it will ensure that
+  <LI>Recognises and parses tables of different types:
+  <UL>
+    <LI>DELIM: A table determined by delimiters.
+    <LI>ALIGN: No need for fancy delimiters, this figures out
+     a table by looking at the layout, the spacing of the cells.
+    <LI>BORDER: has a nice border around the table
+    <LI>PGSQL: the same format as Postgresql query results.
+
+  </UL>
+  <LI>Also with XHTML!  Turn on the --xhtml option and it will ensure that
    all paragraphs and list items have end-tags, all tags are in
    lower-case, and the doctype is for XHTML.
 
@@ -235,7 +242,9 @@ starts, otherwise we don't know that it belongs to the definition.
 </DL>
 <H4><A NAME="section_1_3_1_5">Examples of Tables</A></H4>
 
-<P>Here is a simple table:
+<H5><A NAME="section_1_3_1_5_1">ALIGN</A></H5>
+
+<P>Here is a simple ALIGN table:
 
 <TABLE>
 <TR><TD>-e</TD><TD>File exists.
@@ -243,7 +252,7 @@ starts, otherwise we don't know that it belongs to the definition.
 </TD></TR><TR><TD>-s</TD><TD>File has nonzero size (returns size).
 </TD></TR>
 </TABLE>
-<P>Here are some of the conditions of tables:
+<P>Here are some of the conditions of ALIGN tables:
 
 <TABLE>
 <TR><TD ALIGN="RIGHT"><STRONG>Context:</STRONG></TD><TD>A table needs to be surrounded by blank lines.
@@ -257,14 +266,55 @@ starts, otherwise we don't know that it belongs to the definition.
 </TD></TR><TR><TD ALIGN="RIGHT"><STRONG>Alignment:</STRONG></TD><TD>Alignment of cells is attempted to be preserved.
 </TD></TR>
 </TABLE>
-<P>Here's a three-column table:
+<H5><A NAME="section_1_3_1_5_2">BORDER</A></H5>
 
-<TABLE>
-<TR><TD>Fred</TD><TD>Armstrong</TD><TD>52
-</TD></TR><TR><TD>George</TD><TD>Ningie</TD><TD>64
-</TD></TR><TR><TD>Sam</TD><TD>Jones</TD><TD>47
-</TD></TR>
+<P>This is a table with a border.
+
+<TABLE border="1">
+<THEAD><TR><TH>Food</TH><TH>Qty</TH></TR></THEAD>
+<TBODY>
+<TR><TD>Bread</TD><TD>1</TD></TR>
+<TR><TD>Milk</TD><TD>1</TD></TR>
+<TR><TD>Oranges</TD><TD>3</TD></TR>
+<TR><TD>Apples</TD><TD>6</TD></TR>
+</TBODY>
 </TABLE>
+
+<H5><A NAME="section_1_3_1_5_3">PGSQL</A></H5>
+
+<P>This is the same table like Postgresql would make it.
+
+<TABLE border="1">
+<THEAD><TR><TH>Food</TH><TH>Qty</TH></TR></THEAD>
+<TBODY>
+<TR><TD>Bread</TD><TD>1</TD></TR>
+<TR><TD>Milk</TD><TD>1</TD></TR>
+<TR><TD>Oranges</TD><TD>3</TD></TR>
+<TR><TD>Apples</TD><TD>6</TD></TR>
+</TBODY>
+</TABLE>
+<P>        (4 rows)
+
+
+<H5><A NAME="section_1_3_1_5_4">DELIM</A></H5>
+
+<P>A delimited table needs to have its delimiters at the start and end,
+just to be sure that this is a table.
+
+<TABLE border="1">
+<TR><TD>Fred</TD><TD>Nurk</TD><TD>58</TD></TR>
+<TR><TD>George</TD><TD>Washington</TD><TD>62</TD></TR>
+<TR><TD>Mary</TD><TD>Quant</TD><TD>35</TD></TR>
+</TABLE>
+
+<P>And one can have almost any delimiter one wishes.
+
+<TABLE border="1">
+<TR><TD>Darcy, Fitzwilliam</TD><TD>hero</TD></TR>
+<TR><TD>Bennet, Elizabeth</TD><TD>heroine</TD></TR>
+<TR><TD>Wickham, George</TD><TD>villain</TD></TR>
+</TABLE>
+
 <H1><A NAME="section_2">THINGS TO DO</A></H1>
 
 <P>There are some things which this module doesn't handle yet which
@@ -277,10 +327,8 @@ I would like to implement.
       does)
     <LI>display the correct OL properties with CSS so as to preserve
       that information.
-  </OL>
-  <LI>Perhaps it would be nice to have tables with borders,
-though I'm not sure how exactly to define them.
 
+  </OL>
 </OL>
 <HR>
 

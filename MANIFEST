@@ -30,6 +30,11 @@ tfiles/good_list.html
 tfiles/good_news.html
 tfiles/good_pre.html
 tfiles/good_sample.html
+tfiles/good_table-align.html
+tfiles/good_table-border.html
+tfiles/good_table-delim.html
+tfiles/good_table-pgsql.html
+tfiles/good_table-pgsql2.html
 tfiles/good_xhtml_sample.html
 tfiles/hyphens.txt
 tfiles/links.txt
@@ -47,5 +52,10 @@ tfiles/pre.txt
 tfiles/sample.foot
 tfiles/sample.foot2
 tfiles/sample.txt
+tfiles/table-align.txt
+tfiles/table-border.txt
+tfiles/table-delim.txt
+tfiles/table-pgsql.txt
+tfiles/table-pgsql2.txt
 txt2html
 txt2html.dict

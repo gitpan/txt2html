@@ -1,6 +1,15 @@
 Revision history for txt2html
 =============================
 
+2.20 Sun 7th December 2003
+	- added --table_type option to say which types of table will
+be recognised and parsed if the --make_tables option is true.  In other
+words, there are now new types of table which can be parsed.
+	    * ALIGN is the original space-aligned table type
+	    * PGSQL is the type of table you get from a Postgresql query
+	    * BORDER is a table with +-----+ lines around it as a border
+	    * DELIM is delimited columns
+
 2.10 Sat 6th December 2003
 	- changed process_para method to assume it has only one paragraph;
 and added process_chunk method to deal with processing strings which may

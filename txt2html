@@ -26,8 +26,8 @@ txt2html [ --append_file I<filename> ] [ --append_head I<filename> ]
     [ --preformat_start_marker I<regexp> ] [ --preformat_end_marker I<regexp> ]
     [ --preformat_whitespace_min I<n> ] [ --prepend_file I<filename> ]
     [ --preserve_indent ] [ --short_line_length I<n> ]
-    [ --style_url I<stylesheet_url> ]
-    [ --system_link_dict I<filename> ] [ --tab_width I<n> ]
+    [ --style_url I<stylesheet_url> ] [ --system_link_dict I<filename> ]
+    [ --tab_width I<n> ] [ --table_type I<type>=0/1 ]
     [ --title I<title> ] [ --titlefirst ] [ --underline_length_tolerance I<n> ]
     [ --underline_offset_tolerance I<n> ] [ --unhyphenation ]
     [ --use_mosaic_header ] [ --use_preformat_marker ] [ --xhtml ] file ...
@@ -367,6 +367,14 @@ The name of the default "system" link dictionary.
 How many spaces equal a tab?
 (default: 8)
 
+=item --table_type I<type>=0/1
+    
+    --table_type ALIGN=1 --table_type BORDER=0
+
+This determines which types of tables will be recognised when "make_tables"
+is true.  The possible types are ALIGN, PGSQL, BORDER and DELIM.
+(default: all types are true)
+
 =item --title I<title> | -t I<title>
 
 You can specify a title.  Otherwise it will use a blank one.
@@ -547,6 +555,11 @@ are expected to start at the first line in a "paragraph".
 
 Tables require a more rigid convention.  A table must be marked as a
 separate paragraph, that is, it must be surrounded by blank lines.
+Tables come in different types.  For a table to be parsed, its
+--table_type option must be on, and the --make_tables option must be true.
+
+B<ALIGN Table Type>
+
 Columns must be separated by two or more spaces (this prevents
 accidental incorrect recognition of a paragraph where interword spaces
 happen to line up).  If there are two or more rows in a paragraph and
@@ -568,6 +581,70 @@ becomes
 This guesses for each column whether it is intended to be left,
 centre or right aligned.
 
+B<BORDER Table Type>
+
+This table type has nice borders around it, and will be rendered
+with a border, like so:
+
+    +---------+---------+
+    | Column1 | Column2 |
+    +---------+---------+
+    | val1    | val2    |
+    | val3    | val3    |
+    +---------+---------+
+
+The above becomes
+
+    <TABLE border="1">
+    <THEAD><TR><TH>Column1</TH><TH>Column2</TH></TR></THEAD>
+    <TBODY>
+    <TR><TD>val1</TD><TD>val2</TD></TR>
+    <TR><TD>val3</TD><TD>val3</TD></TR>
+    </TBODY>
+    </TABLE>
+
+It can also have an optional caption at the start.
+
+         My Caption
+    +---------+---------+
+    | Column1 | Column2 |
+    +---------+---------+
+    | val1    | val2    |
+    | val3    | val3    |
+    +---------+---------+
+
+B<PGSQL Table Type>
+
+This format of table is what one gets from the output of a Postgresql
+query.
+
+     Column1 | Column2
+    ---------+---------
+     val1    | val2
+     val3    | val3
+    (2 rows)
+
+This can also have an optional caption at the start.
+This table is also rendered with a border and table-headers like
+the BORDER type.
+
+B<DELIM Table Type>
+
+This table type is delimited by non-alphanumeric characters, and has to
+have at least two rows and two columns before it's recognised as a table.
+
+This one is delimited by the '| character:
+
+    | val1  | val2  |
+    | val3  | val3  |
+
+But one can use almost any suitable character such as : # $ % + and so on.
+This is clever enough to figure out what you are using as the delimiter
+if you have your data set up like a table.  Note that the line has to
+both begin and end with the delimiter, as well as using it to separate
+values.
+
+This can also have an optional caption at the start.
 
 =head1 EXAMPLES
 
@@ -651,7 +728,7 @@ modify it under the same terms as Perl itself.
 # Globals
 #
 use vars qw($VERSION);
-$VERSION = '2.10';
+$VERSION = '2.20';
 
 #################################################################
 # Includes
@@ -740,6 +817,7 @@ sub process_args ($) {
 	'style_url=s',
 	'system_link_dict|sysdict=s',
 	'tab_width|tabwidth|tw=n',
+	'table_type=n%',
 	'title|t=s',
 	'titlefirst|tf!',
 	'underline_length_tolerance|ulength|ul=n',

@@ -2,10 +2,8 @@ TODO list for HTML::TextToHTML
 ==============================
 
 - add in an "obfustcate email addresses" facility
-- tables with borders
 - recognise and reproduce different Ordered List styles.
 - links-per-section
-- tables from delimited text
 - tables with multi-line cells
 - option to add section-numbers to headers (not just header anchors)
   + allow starting section number to be user-defined

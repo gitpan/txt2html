@@ -69,7 +69,7 @@ version number.  Then do
 	cvs commit
 
 Then log in to txt2html.sourceforge.net, cd to the
-/user/group/.../txt2html directory, and run "getweb" and this
+/home/groups/.../txt2html directory, and run "getweb" and this
 will update the website from CVS.
 
 One should also post a message to the mailing list.

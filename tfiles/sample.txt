@@ -140,9 +140,14 @@ Features of HTML::TextToHTML
  * One can also use the link-dictionary to define custom tags, for
    example using the star character to indicate *italics*.
 
- * Now with Tables!  No need for fancy delimiters, this figures out
-   tables by looking at the layout, the spacing of the cells.
- * Now with XHTML!  Turn on the --xhtml option and it will ensure that
+ * Recognises and parses tables of different types:
+   o DELIM: A table determined by delimiters.
+   o ALIGN: No need for fancy delimiters, this figures out
+     a table by looking at the layout, the spacing of the cells.
+   o BORDER: has a nice border around the table
+   o PGSQL: the same format as Postgresql query results.
+
+ * Also with XHTML!  Turn on the --xhtml option and it will ensure that
    all paragraphs and list items have end-tags, all tags are in
    lower-case, and the doctype is for XHTML.
 
@@ -215,13 +220,16 @@ starts, otherwise we don't know that it belongs to the definition.
 Examples of Tables
 ------------------
 
-Here is a simple table:
+ALIGN
+~~~~~
+
+Here is a simple ALIGN table:
 
     -e  File exists.
     -z  File has zero size.
     -s  File has nonzero size (returns size).
 
-Here are some of the conditions of tables:
+Here are some of the conditions of ALIGN tables:
 
   #Context:#  A table needs to be surrounded by blank lines.
    #Length:#  A table must contain at least two rows.
@@ -233,11 +241,48 @@ Here are some of the conditions of tables:
               you will simply get empty cells where the other column is empty.
 #Alignment:#  Alignment of cells is attempted to be preserved.
 
-Here's a three-column table:
+BORDER
+~~~~~~
 
-	Fred       Armstrong    52
-	George     Ningie       64
-	Sam        Jones        47
+This is a table with a border.
+
+	+---------+-----+
+	| Food    | Qty |
+	+---------+-----+
+	| Bread   |   1 |
+	| Milk    |   1 |
+	| Oranges |   3 |
+	| Apples  |   6 |
+	+---------+-----+
+
+PGSQL
+~~~~~~
+
+This is the same table like Postgresql would make it.
+
+	 Food    | Qty 
+	---------+-----
+	 Bread   |   1 
+	 Milk    |   1 
+	 Oranges |   3 
+	 Apples  |   6 
+	(4 rows)
+
+DELIM
+~~~~~
+
+A delimited table needs to have its delimiters at the start and end,
+just to be sure that this is a table.
+
+:Fred:Nurk:58:
+:George:Washington:62:
+:Mary:Quant:35:
+
+And one can have almost any delimiter one wishes.
+
+| Darcy, Fitzwilliam | hero    |
+| Bennet, Elizabeth  | heroine |
+| Wickham, George    | villain |
 
 THINGS TO DO
 ============
@@ -250,8 +295,6 @@ A. I would like to be able to preserve lettered lists, that is:
       does)
    b) display the correct OL properties with CSS so as to preserve
       that information.
-B. Perhaps it would be nice to have tables with borders,
-though I'm not sure how exactly to define them.
 
 ----------------------------------------
 

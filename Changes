@@ -1,6 +1,9 @@
 Revision history for txt2html
 =============================
 
+2.22 Sun 22nd February 2004
+	- bug fix with delimiter table
+
 2.21 Sat 10th January 2004
 	- bugfixes with a stricter perl 5.8.2
 	- bugfix for processing empty file

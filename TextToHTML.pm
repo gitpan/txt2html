@@ -611,7 +611,7 @@ BEGIN {
   run_txt2html
 );
 $PROG = 'HTML::TextToHTML';
-$VERSION = '2.21';
+$VERSION = '2.22';
 
 #------------------------------------------------------------------------
 use constant TEXT_TO_HTML => "TEXT_TO_HTML";
@@ -2702,6 +2702,14 @@ sub is_delim_table ($%) {
     if ($rows[0] =~ /^\s*([^a-zA-Z0-9])/)
     {
 	$delim = $1;
+	# have to get rid of ^ and []
+	$delim =~ s/\^//g;
+	$delim =~ s/\[//g;
+	$delim =~ s/\]//g;
+	if (!$delim) # no delimiter after all
+	{
+	    return 0;
+	}
     }
     else
     {

@@ -5,11 +5,13 @@ LICENSE
 Makefile.PL
 MANIFEST
 MANIFEST.SKIP
+META.yml			Module meta-data (added by MakeMaker)
 README
 t/10para.t
 t/20tfiles.t
 t/30sample.t
 t/50xsample.t
+t/70bugs.t
 TextToHTML.pm
 tfiles/custom-headers.txt
 tfiles/custom-headers2.txt
@@ -50,6 +52,7 @@ tfiles/list-styles.txt
 tfiles/list.txt
 tfiles/news.txt
 tfiles/pre.txt
+tfiles/robo.txt
 tfiles/sample.foot
 tfiles/sample.foot2
 tfiles/sample.txt
@@ -61,4 +64,3 @@ tfiles/table-pgsql2.txt
 TODO
 txt2html
 txt2html.dict
-META.yml                                 Module meta-data (added by MakeMaker)

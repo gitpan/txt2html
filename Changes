@@ -1,6 +1,10 @@
 Revision history for txt2html
 =============================
 
+2.35 Thu 6th January 2005
+	- fixed bug where a Dos file was processed on a Unix system.
+	- removed Makefile.PL; not needed with modern perls
+
 2.34 Thu 6th January 2005
 	- fixed another bug with demoronize code (gah!)
 

@@ -4,7 +4,6 @@ DEVNOTES
 INSTALL
 lib/HTML/TextToHTML.PL
 LICENSE
-Makefile.PL
 MANIFEST
 MANIFEST.SKIP
 META.yml			Module meta-data (added by MakeMaker)
@@ -24,6 +23,7 @@ tfiles/empty.txt
 tfiles/good_custom-headers.html
 tfiles/good_custom-headers2.html
 tfiles/good_empty.html
+tfiles/good_heading1.html
 tfiles/good_hyphens.html
 tfiles/good_links.html
 tfiles/good_links2.html
@@ -47,6 +47,7 @@ tfiles/good_table-delim.html
 tfiles/good_table-pgsql.html
 tfiles/good_table-pgsql2.html
 tfiles/good_xhtml_sample.html
+tfiles/heading1.txt
 tfiles/hyphens.txt
 tfiles/links.txt
 tfiles/links2.txt

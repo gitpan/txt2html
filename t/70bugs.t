@@ -2,7 +2,7 @@
 
 #########################
 
-use Test::More tests => 4;
+use Test::More tests => 6;
 use HTML::TextToHTML;
 
 #########################
@@ -117,5 +117,27 @@ $result = compare('tfiles/good_mixed.html', 'mixed.html');
 ok($result, 'test file matches original example exactly');
 if ($result) {
     unlink('mixed.html');
+}
+
+#
+# bugs : dos file on unix platform not detecting headings
+#
+$result = $conv->txt2html(
+system_link_dict=>"txt2html.dict",
+default_link_dict=>"",
+make_tables=>0,
+infile=>["tfiles/heading1.txt"],
+outfile=>"heading1.html",
+custom_heading_regexp=>[],
+#debug=>1,
+#dict_debug=>15,
+);
+ok($result, 'converted heading1.txt');
+
+# compare the files
+$result = compare('tfiles/good_heading1.html', 'heading1.html');
+ok($result, 'test file matches original example exactly');
+if ($result) {
+    unlink('heading1.html');
 }
 

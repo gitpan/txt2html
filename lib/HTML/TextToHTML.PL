@@ -224,7 +224,7 @@ developer) (default: false)
 
 The name of the default "user" link dictionary.
 (default: "$ENV{'HOME'}/.txt2html.dict" -- this is the same as for
-the txt2html script)
+the txt2html script.  If there is no $ENV{HOME} then it is just '.txt2html.dict')
 
 =item demoronize
 
@@ -647,7 +647,7 @@ BEGIN {
   run_txt2html
 );
 $PROG = 'HTML::TextToHTML';
-$VERSION = '2.34';
+$VERSION = '2.35';
 
 #------------------------------------------------------------------------
 use constant TEXT_TO_HTML => "TEXT_TO_HTML";
@@ -996,7 +996,7 @@ sub process_chunk ($$;%) {
     );
 
     my $ret_str = '';
-    my @paras = split(/\n\n/, $chunk);
+    my @paras = split(/\r?\n\r?\n/, $chunk);
     my $ind = 0;
     if (@paras == 1) # just one paragraph
     {
@@ -1114,6 +1114,7 @@ sub process_para ($$;%) {
 	    #
 	    # Now we split the paragraph into lines
 	    #
+	    $para =~ s/\r//g; # remove any stray carriage returns
 	    my $para_len         = length($para);
 	    my @para_lines       = split (/^/, $para);
 	    my @para_line_len    = ();
@@ -1573,7 +1574,7 @@ sub txt2html ($;$) {
                     $self->do_file_start($outhandle, $para);
                 }
 		$self->clear_section_links();
-                $para = $self->process_para($para, 
+                $para = $self->process_chunk($para, 
 		    close_tags=>0);
                 print $outhandle $para, "\n";
                 $print_count++;
@@ -1671,7 +1672,8 @@ sub init_our_data ($) {
     $self->{bold_delimiter} = '#';
     $self->{caps_tag} = 'STRONG';
     $self->{custom_heading_regexp} = [];
-    $self->{default_link_dict} = "$ENV{HOME}/.txt2html.dict";
+    $self->{default_link_dict} = ($ENV{HOME}
+    	? "$ENV{HOME}/.txt2html.dict" : '.txt2html.dict');
     $self->{dict_debug} = 0;
     $self->{doctype} = "-//W3C//DTD HTML 3.2 Final//EN";
     $self->{demoronize} = 1;
@@ -3617,7 +3619,7 @@ sub is_heading ($%) {
     if (!is_blank(${$line_ref})
 	&& !$self->is_ul_list_line(line=>${$line_ref})
 	&& defined $next_ref
-	&& ${$next_ref} =~ /^\s*[=\-\*\.~\+]+\s*$/)
+	&& ${$next_ref} =~ /^\s*[-=*.~+]+\s*$/)
     {
 	my ($hoffset, $heading) = ${$line_ref} =~ /^(\s*)(.+)$/;
 	$hoffset = "" unless defined($hoffset);

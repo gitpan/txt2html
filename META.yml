@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name: txt2html
-version: 2.34
+version: 2.35
 author:
   - Kathryn Andersen
 abstract: convert plain text file to HTML

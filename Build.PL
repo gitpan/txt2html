@@ -33,10 +33,3 @@ $path =~ s{bin/?$}{share/txt2html};
 $build->install_path->{dict} = $path;
 
 $build->create_build_script;
-# create the Makefile.PL if need be
-if (! -f 'Makefile.PL')
-{
-    use Module::Build::Compat;
-    print "creating Makefile.PL\n";
-    Module::Build::Compat->create_makefile_pl('passthrough', $build);
-}

@@ -7,10 +7,12 @@ When incrementing the VERSION, do it in two places:
 This is because the version of the whole package is taken from the module,
 and it would be very confusing if the script version was different,
 considering they're distributed in the same bundle.
-One also needs to change the META tag in
-- tfiles/good_sample.html
-- tfiles/good_xhtml_sample.html
-so that the version there matches the new current version.
+
+One also needs to change it in the README file.
+
+One also needs to change the META tag in tfiles/good_*.html (the ones
+that have a META tag) so that the version there matches the new current
+version.
 
 All new options need to be added in five places:
 - TextToHTML.pm init_our_args(), to initialize the default
@@ -27,3 +29,55 @@ dictionary, it needs to be changed in four places:
 - TextToHTML.pm init_our_args()
 - TextToHTML.pm OPTIONS documentation
 - txt2html OPTIONS documentation
+
+Release Notes
+=============
+
+Before releasing, don't forget to run
+
+	make
+	make test
+	make dist
+
+(and usually "make install" as well)
+
+This bundle is released in three different external places:
+- CPAN
+- Sourceforge
+- FreshMeat
+
+CPAN Release
+------------
+
+Log in to PAUSE, and browser-upload the .tar.gz file.  Simple, huh?
+
+Sourceforge Release
+-------------------
+
+Do a CVS commit if you haven't already.
+
+Go to the Admin/Files section and follow the instructions.
+You will need to ftp upload the .tar.gz file to upload.sourceforge.net
+/incoming directory before doing certain steps.
+
+One also needs to update the web-page.  Cd to txt2html_web/htdocs on
+your home machine, and edit index.html to update the version number.
+Then do "make del_cpfiles".  Then edit the Makefile to update the
+version number.  Then do
+	make cpfiles
+	make
+	cvs commit
+
+Then log in to txt2html.sourceforge.net, cd to the
+/user/group/.../txt2html directory, and run "getweb" and this
+will update the website from CVS.
+
+One should also post a message to the mailing list.
+
+FreshMeat Release
+-----------------
+
+Log in to freshmeat.net, and follow the instructions for new releases.
+The "changes this release" will need to be a summary of the changes.
+Since the file is on sourceforge, you won't need to alter the download
+URL.

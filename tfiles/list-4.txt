@@ -15,7 +15,15 @@ Header
       This is another paragraph of list item 2 which I will pad with
    asdashjk kjashdkajsh kjhaskjahs kajshkajsdh kajshkajshd
 
-* Item 3:
+* Item 3: does work and is readable as text
+
+  This is list item 3 which I will pad with
+  asdashjk kjashdkajsh kjhaskjahs kajshkajsdh kajshkajshd
+
+  This is another paragraph of list item 3 which I will pad with
+  asdashjk kjashdkajsh kjhaskjahs kajshkajsdh kajshkajshd
+
+* Item 4:
 
   This item explains the 2 test cases below:
 
@@ -23,5 +31,5 @@ Header
 
     2) This is case 2
 
-* Item 4: doesn't indent to the previous level
+* Item 5: does indent to the previous level
 

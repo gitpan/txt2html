@@ -2,7 +2,7 @@
 
 #########################
 
-use Test::More tests => 26;
+use Test::More tests => 30;
 use HTML::TextToHTML;
 
 #########################
@@ -178,6 +178,9 @@ if ($result) {
 #
 # Lists
 #
+$conv = undef;
+$conv = new HTML::TextToHTML();
+
 $result = $conv->txt2html(
 system_link_dict=>"txt2html.dict",
 default_link_dict=>"",
@@ -250,8 +253,6 @@ outfile=>"list-4.html",
 );
 ok($result, 'converted list-4.txt');
 
-$conv = undef;
-$conv = new HTML::TextToHTML();
 # compare the files
 $result = compare('tfiles/good_list-4.html', 'list-4.html');
 ok($result, 'test file matches original example exactly');
@@ -259,6 +260,52 @@ if ($result) {
     unlink('list-4.html');
 }
 
+$conv = undef;
+$conv = new HTML::TextToHTML();
+$result = $conv->txt2html(
+system_link_dict=>"txt2html.dict",
+default_link_dict=>"",
+extract=>0,
+xhtml=>1,
+infile=>["tfiles/list-5.txt"],
+outfile=>"list-5.html",
+#debug=>1,
+#dict_debug=>15,
+);
+ok($result, 'converted list-5.txt');
+
+# compare the files
+$result = compare('tfiles/good_list-5.html', 'list-5.html');
+ok($result, 'test file matches original example exactly');
+if ($result) {
+    unlink('list-5.html');
+}
+
+$conv = undef;
+$conv = new HTML::TextToHTML();
+$result = $conv->txt2html(
+system_link_dict=>"txt2html.dict",
+default_link_dict=>"",
+bullets=>'-=o+*',
+bullets_ordered=>'#',
+extract=>0,
+xhtml=>1,
+infile=>["tfiles/list-custom.txt"],
+outfile=>"list-custom.html",
+#debug=>1,
+#dict_debug=>15,
+);
+ok($result, 'converted list-custom.txt');
+
+# compare the files
+$result = compare('tfiles/good_list-custom.html', 'list-custom.html');
+ok($result, 'test file matches original example exactly');
+if ($result) {
+    unlink('list-custom.html');
+}
+
+$conv = undef;
+$conv = new HTML::TextToHTML();
 $result = $conv->txt2html(
 system_link_dict=>"txt2html.dict",
 default_link_dict=>"",

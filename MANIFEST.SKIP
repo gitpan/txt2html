@@ -7,7 +7,6 @@
 # the TODO file
 ^\.todo$
 # other files
-^txt2html$
 
 # MakeMaker files
 ^Makefile$

@@ -38,7 +38,7 @@ ok($out_str, 'converted sample string');
 is($out_str, $ok_str, 'compare converted string with OK string');
 
 #
-# test the process_para method with an ordered list
+# test the process_chunk method with an ordered list
 #
 $test_str = "Here is my list:
 
@@ -49,7 +49,6 @@ $test_str = "Here is my list:
 ";
 
 $ok_str = "<P>Here is my list:
-
 <OL>
   <LI>Spam
   <LI>Jam
@@ -58,7 +57,7 @@ $ok_str = "<P>Here is my list:
 </OL>
 ";
 
-$out_str = $conv->process_para($test_str);
+$out_str = $conv->process_chunk($test_str);
 ok($out_str, 'converted sample string with list');
 
 # compare the result
@@ -79,7 +78,7 @@ and everywhere that Matty went<BR>
 the truck was <EM>always</EM> found.
 ";
 
-$out_str = $conv->process_para($test_str, is_fragment=>1);
+$out_str = $conv->process_chunk($test_str, is_fragment=>1);
 ok($out_str, 'converted sample string');
 
 # compare the result
@@ -99,7 +98,7 @@ ok($out_str, 'converted sample string with URL');
 is($out_str, $ok_str, 'compare converted URL string with OK URL string');
 
 #
-# test process_para with caps_tag turned off
+# test process_chunk with caps_tag turned off
 #
 $test_str = "We have a line alone
 FULL OF CAPS AND FURY
@@ -110,7 +109,7 @@ FULL OF CAPS AND FURY
 ";
 
 $conv->args(caps_tag=>'');
-$out_str = $conv->process_para($test_str, is_fragment=>1);
+$out_str = $conv->process_chunk($test_str, is_fragment=>1);
 ok($out_str, 'converted sample string with CAPS');
 
 # compare the result

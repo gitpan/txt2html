@@ -1,14 +1,11 @@
 TODO list for HTML::TextToHTML
 ==============================
 
-- multi-paragraph list items
 - add in an "obfustcate email addresses" facility
 - tables with borders
-- definition lists
 - recognise and reproduce different Ordered List styles.
 - links-per-section
 - tables from delimited text
 - tables with multi-line cells
-- user-defined bullets for ordered and unordered lists
 - option to add section-numbers to headers (not just header anchors)
   + allow starting section number to be user-defined

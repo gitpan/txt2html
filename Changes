@@ -1,6 +1,24 @@
 Revision history for txt2html
 =============================
 
+2.10 Sat 6th December 2003
+	- changed process_para method to assume it has only one paragraph;
+and added process_chunk method to deal with processing strings which may
+contain more than one paragraph in them.
+	- a fair few internal changes to make more things think in terms of
+paragraphs rather than lines; this changes the parsing of a few things,
+but doesn't break the conventions.
+	- fixed a bug where unordered lists were allowed to have bullets
+which were more than one character wide.  Well, I considered it a bug,
+it was annoying me.
+	- added --bullets and --bullets_ordered options to enable the
+user to define the bullet characters used for unordered and ordered
+lists.
+	- hooray!  Figured out a way of having multi-paragraph list items!
+	- woo hoo!  Added definition lists!  And managed to do it so that
+they are treated like the other lists, that is, you can nest lists in
+definition lists and visa versa.
+
 2.06 Sun 15th November 2003
 	- fixed bug with processing STDIN (ie piping input to txt2html)
 	- moved test input files into separate tfiles directory

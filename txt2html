@@ -12,7 +12,8 @@ txt2html --help
 txt2html --manpage
 
 txt2html [ --append_file I<filename> ] [ --append_head I<filename> ]
-    [ --body_deco I<string> ] [ --caps_tag I<tag> ]
+    [ --body_deco I<string> ] [ --bullets I<string> ]
+    [ --bullets_ordered I<string> ] [ --caps_tag I<tag> ]
     { --custom_heading_regexp I<regexp> } [ --debug ]
     [ --default_link_dict I<filename> ] [ --dict_debug I<n> ]
     [ --doctype I<doctype> ] [ --eight_bit_clean ] [ --escape_HTML_chars ]
@@ -93,6 +94,25 @@ but instead, have:
 Body decoration string: a string to be added to the BODY tag so that
 one can set attributes to the BODY (such as class, style, bgcolor etc)
 For example, "class='withimage'".
+
+=item --bullets I<string>
+
+This defines what single characters are taken to be "bullet" characters
+for unordered lists.  Note that because this is used as a character
+class, if you use '-' it must come first.
+(default:-=o*\267)
+
+=item --bullets_ordered I<string>
+
+This defines what single characters are taken to be "bullet" placeholder
+characters for ordered lists.  Ordered lists are normally marked by
+a number or letter followed by '.' or ')' or ']' or ':'.  If an ordered
+bullet is used, then it simply indicates that this is an ordered list,
+without giving explicit numbers.
+
+Note that because this is used as a character class, if you use '-' it
+must come first.
+(default:nothing)
 
 =item --caps_tag I<tag> | --capstag I<tag> | -ct I<tag>
 
@@ -204,7 +224,7 @@ The name of the input file.
 This is a cumulative list argument.  If you want to process more than
 one file, just add another --infile I<file> to the list of arguments.
 Or else just add the filename without the option, after all the options.
-(default:undefined)
+(default:-)
 
 =item --links_dictionaries I<filename> | --link I<filename> | -l I<filename>
 
@@ -522,7 +542,8 @@ in the outer list.
 
 Headers (apart from custom headers) are distinguished by "underlines"
 underneath them; headers in all-capitals are distinguished from
-those in mixed case.
+those in mixed case.  All headers, both normal and custom headers,
+are expected to start at the first line in a "paragraph".
 
 Tables require a more rigid convention.  A table must be marked as a
 separate paragraph, that is, it must be surrounded by blank lines.
@@ -630,7 +651,7 @@ modify it under the same terms as Perl itself.
 # Globals
 #
 use vars qw($VERSION);
-$VERSION = '2.06';
+$VERSION = '2.10';
 
 #################################################################
 # Includes
@@ -683,6 +704,8 @@ sub process_args ($) {
 	'append_file|append_body|ab=s',
 	'append_head|ah=s',
 	'body_deco=s',
+	'bullets=s',
+	'bullets_ordered=s',
 	'caps_tag|capstag|ct=s',
 	'custom_heading_regexp|heading|H=s@',
 	'default_link_dict|dict=s',

@@ -3,7 +3,7 @@
 <html>
 <head>
 <title>txt2html/HTML::TextToHTML Sample Conversion</title>
-<meta name="generator" content="HTML::TextToHTML v2.06"/>
+<meta name="generator" content="HTML::TextToHTML v2.10"/>
 </head>
 <body>
 <p><a href="http://txt2html.sourceforge.net/">txt2html</a>/<a href="http://www.katspace.com/tools/text_to_html/">HTML::TextToHTML</a> Sample Conversion
@@ -69,17 +69,17 @@ demonstrate that.
 (Ok, it wasn't <em>that</em> important)
 </p>
 <h1><a name="section_1">EXAMPLE HEADER</a></h1>
- 
+
 <p>Since this is the first header noticed (all caps, underlined with an
 "="), it will be a level 1 header.  It gets an anchor named
 "section_1".
 </p>
 <h2><a name="section_1_1">Another example</a></h2>
- <p>This is the second type of header (not all caps, underlined with "=").
+<p>This is the second type of header (not all caps, underlined with "=").
 It gets an anchor named "section_1_1".
 </p>
 <h2><a name="section_1_2">Yet another example</a></h2>
- 
+
 <p>This header was in the same style, so it was assigned the same header
 tag.  Note the anchor names in the HTML. (You probably can't see them
 in your current document view.)  Its anchor is named "section_1_2". 
@@ -91,7 +91,7 @@ Get the picture?
 documents look like.
 </p>
 <h2><a name="section_1_3">Features of HTML::TextToHTML</a></h2>
- 
+
 <ul>
   <li>Handles different kinds of lists
   <ol>
@@ -116,6 +116,7 @@ documents look like.
       </li><li>HTML without CSS can't specify how ordered lists should be
         indicated, so it will be a numbered list in most browsers.
     </li></ol>
+    </li><li>Definition lists (see below)
   </li></ol>
   </li><li>Doesn't screw up mail-ish things
   </li><li>Spots preformated text
@@ -134,15 +135,16 @@ documents look like.
 
   </li><li>Deals with paragraphs decently.
 
-  <ul>
-    <li>looks for short lines in the middle of paragraphs and keeps them
-     short with the use of breaks (&lt;BR&gt;).  How short the lines need to
-     be is configurable.
-    </li><li>Unhyphenates split words that are in the middle of paragraphs.  
-     Let me know if trailing punctuation isn't handled "properly".  
-     It should be.
-
-  </li></ul>
+<p>   Looks for short lines in the middle of paragraphs and keeps them
+   short with the use of breaks (&lt;BR&gt;).  How short the lines need to
+   be is configurable.
+</p>
+<p>   Unhyphenates split words that are in the middle of paragraphs.  
+   Let me know if trailing punctuation isn't handled "properly".  
+   It should be.
+</p>
+<p>   One can also have multi-paragraph list items, like this one.
+</p>
   </li><li>Puts anchors at all headers and, if you're using the mail header
    features, at the beginning of each mail message.  The anchor names
    for headings are based on guessed section numbers.  
@@ -167,7 +169,7 @@ documents look like.
 
 </li></ul>
 <h4><a name="section_1_3_1_1">Example of short lines</a></h4>
- 
+
 <p>We're the knights of the round table<br/>
 We dance whene'er we're able<br/>
 We do routines and chorus scenes<br/>
@@ -176,7 +178,7 @@ We dine well here in Camelot<br/>
 We eat ham and jam and spam a lot.
 </p>
 <h4><a name="section_1_3_1_2">Example of varied formatting</a></h4>
- 
+
 <p>If I want to <em>emphasize</em> something, then I'd use stars to wrap
 around the words, <em>even if there were more than one</em>, <em>that's</em>
 what I'd do.  But I could also <u>underline</u> words, so long as
@@ -190,7 +192,7 @@ exciting</em> is coping with italics and similar things <em>spread across
 multiple lines</em>.
 </p>
 <h4><a name="section_1_3_1_3">Example of Long Preformatting</a></h4>
- 
+
 <p>(extract from Let It Rain by Kristen Hall)
 </p>
 <pre>
@@ -215,8 +217,25 @@ multiple lines</em>.
         Let it rain, on me
 
 </pre>
-<h4><a name="section_1_3_1_4">Examples of Tables</a></h4>
- 
+<h4><a name="section_1_3_1_4">Definition Lists</a></h4>
+
+<p>A definition list comprises the following:
+</p>
+<dl>
+  <dt>Term</dt>
+<dd>  The term part of a DL item is a word on a line by itself, ending
+with a colon.
+  </dd><dt>Definition</dt>
+<dd>The definition part of a DL item is at least one paragraph following
+the term.
+
+<p>  If one has more than one paragraph in the definition, the first line of
+the next paragraph needs to be indented two spaces from where the term
+starts, otherwise we don't know that it belongs to the definition.
+</p>
+</dd></dl>
+<h4><a name="section_1_3_1_5">Examples of Tables</a></h4>
+
 <p>Here is a simple table:
 </p>
 <table summary="">
@@ -248,7 +267,7 @@ multiple lines</em>.
 </td></tr>
 </table>
 <h1><a name="section_2">THINGS TO DO</a></h1>
- 
+
 <p>There are some things which this module doesn't handle yet which
 I would like to implement.
 </p>
@@ -264,13 +283,6 @@ I would like to implement.
 though I'm not sure how exactly to define them.
 
 </li></ol>
-<p>Definition lists would also be cool.
-</p>
-<p>Fanfic:<br/>
-  Fiction based on the universe of some movie or TV show.
-Fanzine:<br/>
-  Amateur magazine produced by fans.
-</p>
 <hr/>
 
 <p>The footer is everything from the end of this sentence to the

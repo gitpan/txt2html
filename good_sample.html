@@ -1,21 +1,21 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <HTML>
 <HEAD>
-<TITLE>HTML::TextToHTML Sample Conversion</TITLE>
-<META NAME="generator" CONTENT="HTML::TextToHTML v2.00">
+<TITLE>txt2html/HTML::TextToHTML Sample Conversion</TITLE>
+<META NAME="generator" CONTENT="HTML::TextToHTML v2.01">
 </HEAD>
 <BODY>
-<P><A HREF="http://www.katspace.com/tools/text_to_html/">HTML::TextToHTML</A> Sample Conversion
+<P><A HREF="http://txt2html.sourceforge.net/">txt2html</A>/<A HREF="http://www.katspace.com/tools/text_to_html/">HTML::TextToHTML</A> Sample Conversion
 
 <P>This sample is based hugely on the original sample.txt produced
-by <A HREF="http://www.aigeek.com/">Seth Golub</A> for <A HREF="http://www.aigeek.com/txt2html/">txt2html</A>.
+by <A HREF="http://www.aigeek.com/">Seth Golub</A> for txt2html.
 
 <P>I used the following options to convert this document:
 
 <PRE>
      --titlefirst --mailmode --make_tables
      --custom_heading_regexp '^ *--[\w\s]+-- *$'
-     --system_link_dict TextToHTML.dict
+     --system_link_dict txt2html.dict
      --append_body sample.foot --infile sample.txt --outfile sample.html
 
 </PRE>
@@ -25,7 +25,7 @@ by <A HREF="http://www.aigeek.com/">Seth Golub</A> for <A HREF="http://www.aigee
 
 <P>or using the script
 
-<P>        texthyper <EM>options</EM>
+<P>        txt2html <EM>options</EM>
 
 <P>or from a (test) perl script with:
         
@@ -71,17 +71,17 @@ demonstrate that.
  
 <P>Since this is the first header noticed (all caps, underlined with an
 "="), it will be a level 1 header.  It gets an anchor named
-"section-1".
+"section_1".
 
 <H2><A NAME="section_1_1">Another example</A></H2>
  <P>This is the second type of header (not all caps, underlined with "=").
-It gets an anchor named "section-1.1".
+It gets an anchor named "section_1_1".
 
 <H2><A NAME="section_1_2">Yet another example</A></H2>
  
 <P>This header was in the same style, so it was assigned the same header
 tag.  Note the anchor names in the HTML. (You probably can't see them
-in your current document view.)  Its anchor is named "section-1.2". 
+in your current document view.)  Its anchor is named "section_1_2". 
 Get the picture?
 
 <H3><A NAME="section_1_2_1">-- This is a custom header --</A></H3>

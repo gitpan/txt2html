@@ -1,6 +1,7 @@
 #
 # Sample links dictionary file for HTML::TextToHTML
 # http://www.katspace.com/tools/text_to_html
+# http://txt2html.sourceforge.net/
 # based on links dictionary for Seth Golub's txt2html
 # http://www.aigeek.com/txt2html/
 #
@@ -161,7 +162,7 @@
 # Seth and his amazing conversion program    :-)
 
 "Seth Golub"  -io-> http://www.aigeek.com/
-"txt2html"    -io-> http://www.aigeek.com/txt2html/
+"txt2html"    -io-> http://txt2html.sourceforge.net/
 
 # Kathryn and her amazing modules 8-)
 "Kathryn Andersen"  -io-> http://www.katspace.com/

@@ -1,4 +1,4 @@
-HTML::TextToHTML Sample Conversion
+txt2html/HTML::TextToHTML Sample Conversion
 
 This sample is based hugely on the original sample.txt produced
 by Seth Golub for txt2html.
@@ -7,7 +7,7 @@ I used the following options to convert this document:
 
      --titlefirst --mailmode --make_tables
      --custom_heading_regexp '^ *--[\w\s]+-- *$'
-     --system_link_dict TextToHTML.dict
+     --system_link_dict txt2html.dict
      --append_body sample.foot --infile sample.txt --outfile sample.html
 
 This has either been done at the command line with:
@@ -16,7 +16,7 @@ This has either been done at the command line with:
 
 or using the script
 
-	texthyper *options*
+	txt2html *options*
 
 or from a (test) perl script with:
 	
@@ -61,19 +61,19 @@ EXAMPLE HEADER
 
 Since this is the first header noticed (all caps, underlined with an
 "="), it will be a level 1 header.  It gets an anchor named
-"section-1".
+"section_1".
 
 Another example
 ===============
 This is the second type of header (not all caps, underlined with "=").
-It gets an anchor named "section-1.1".
+It gets an anchor named "section_1_1".
 
 Yet another example
 ===================
 
 This header was in the same style, so it was assigned the same header
 tag.  Note the anchor names in the HTML. (You probably can't see them
-in your current document view.)  Its anchor is named "section-1.2". 
+in your current document view.)  Its anchor is named "section_1_2". 
 Get the picture?
 
 

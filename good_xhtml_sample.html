@@ -2,21 +2,21 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
 <head>
-<title>HTML::TextToHTML Sample Conversion</title>
-<meta name="generator" content="HTML::TextToHTML v2.00"/>
+<title>txt2html/HTML::TextToHTML Sample Conversion</title>
+<meta name="generator" content="HTML::TextToHTML v2.01"/>
 </head>
 <body>
-<p><a href="http://www.katspace.com/tools/text_to_html/">HTML::TextToHTML</a> Sample Conversion
+<p><a href="http://txt2html.sourceforge.net/">txt2html</a>/<a href="http://www.katspace.com/tools/text_to_html/">HTML::TextToHTML</a> Sample Conversion
 </p>
 <p>This sample is based hugely on the original sample.txt produced
-by <a href="http://www.aigeek.com/">Seth Golub</a> for <a href="http://www.aigeek.com/txt2html/">txt2html</a>.
+by <a href="http://www.aigeek.com/">Seth Golub</a> for txt2html.
 </p>
 <p>I used the following options to convert this document:
 </p>
 <pre>
      --titlefirst --mailmode --make_tables
      --custom_heading_regexp '^ *--[\w\s]+-- *$'
-     --system_link_dict TextToHTML.dict
+     --system_link_dict txt2html.dict
      --append_body sample.foot --infile sample.txt --outfile sample.html
 
 </pre>
@@ -26,7 +26,7 @@ by <a href="http://www.aigeek.com/">Seth Golub</a> for <a href="http://www.aigee
 </p>
 <p>or using the script
 </p>
-<p>        texthyper <em>options</em>
+<p>        txt2html <em>options</em>
 </p>
 <p>or from a (test) perl script with:
         
@@ -72,17 +72,17 @@ demonstrate that.
  
 <p>Since this is the first header noticed (all caps, underlined with an
 "="), it will be a level 1 header.  It gets an anchor named
-"section-1".
+"section_1".
 </p>
 <h2><a name="section_1_1">Another example</a></h2>
  <p>This is the second type of header (not all caps, underlined with "=").
-It gets an anchor named "section-1.1".
+It gets an anchor named "section_1_1".
 </p>
 <h2><a name="section_1_2">Yet another example</a></h2>
  
 <p>This header was in the same style, so it was assigned the same header
 tag.  Note the anchor names in the HTML. (You probably can't see them
-in your current document view.)  Its anchor is named "section-1.2". 
+in your current document view.)  Its anchor is named "section_1_2". 
 Get the picture?
 </p>
 <h3><a name="section_1_2_1">-- This is a custom header --</a></h3>

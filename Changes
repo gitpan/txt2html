@@ -1,6 +1,10 @@
 Revision history for txt2html
 =============================
 
+2.01 Sun 1st June 2003
+	- fixed up a few documentation/reference things that I'd forgotten,
+changing names in sample.txt for example.
+
 2.00 Sat 31st May 2003
 	- merge of HTML::TextToHTML and the official txt2html - hence
 the version jump.

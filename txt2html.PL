@@ -622,35 +622,13 @@ All rights reserved.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
-=head1 HISTORY
-
-=over 4
-
-=item Version 1.0
-
-initial version
-
-=item Version 1.10
-
-Merged script into HTML::TextToHTML distribution.  Removed AppConfig
-and use Getopt::Long and Getopt::ArgvFile instead.  Put all documentation
-for this script in the script file, even if it means duplication of the
-documentation of HTML::TextToHTML.
-
-=item Version 2.00
-
-Merged this back with the main txt2html development; renamed the
-script to txt2html.
-
-=back 4
-
 =cut
 
 #################################################################
 # Globals
 #
 use vars qw($VERSION);
-$VERSION = '2.00';
+$VERSION = '2.01';
 
 #################################################################
 # Includes

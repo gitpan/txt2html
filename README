@@ -1,0 +1,29 @@
+txt2html version 2.00
+======================
+
+HTML::TextToHTML converts plain text files into HTML.  The txt2html
+script uses this module to do the same from the command-line.
+
+It supports headings, tables, lists, simple character markup, and
+hyperlinking, and is highly customizable. It recognizes some of the
+apparent structure of the source document (mostly whitespace and
+typographic layout), and attempts to mark that structure explicitly
+using HTML. The purpose for this tool is to provide an easier way of
+converting existing text documents to HTML format, giving something
+nicer than just whapping the text in a PRE block.
+
+HISTORY
+
+The original txt2html script was written by Seth Golub (see
+http://www.aigeek.com/txt2html/), and converted to a perl module by
+Kathryn Andersen (see http://www.katspace.com/tools/text_to_html/) and
+made into a sourceforge project by Sun Tong (see
+http://sourceforge.net/projects/txt2html/).  Earlier versions of the
+HTML::TextToHTML module called the included script texthyper so as not
+to clash with the original txt2html script, but now the projects have
+all been merged.
+
+INSTALLATION
+
+See the INSTALL file for installation and dependency information.
+

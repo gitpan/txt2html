@@ -27,6 +27,7 @@ WriteMakefile(
     'DISTNAME'		=> 'txt2html',
     'VERSION_FROM'	=> 'TextToHTML.pm', # finds $VERSION
     'PREREQ_PM'		=> {
+		'Filter::Util::Call' => 0,
 		'ExtUtils::configPL' => 0,
 		'Getopt::Long' => 0,
 		'File::Basename' => 0,

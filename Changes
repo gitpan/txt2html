@@ -1,6 +1,10 @@
 Revision history for txt2html
 =============================
 
+2.03 Tue 15th July 2003
+	- fixed bug with para tests (it didn't fail on my system
+because it was using the already installed system links dictionary)
+
 2.02 Sun 13th July 2003
 	- fixed bug in documentation about custom headings
 	- moved tests into t/ directory

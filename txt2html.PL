@@ -630,7 +630,7 @@ modify it under the same terms as Perl itself.
 # Globals
 #
 use vars qw($VERSION);
-$VERSION = '2.02';
+$VERSION = '2.03';
 
 #################################################################
 # Includes

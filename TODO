@@ -2,6 +2,7 @@ TODO list for HTML::TextToHTML
 ==============================
 
 - multi-paragraph list items
+- enable CAPS tagging to be optional
 - add in an "obfustcate email addresses" facility
 - tables with borders
 - definition lists

@@ -11,6 +11,11 @@ my $conv = new HTML::TextToHTML();
 ok( defined $conv, 'new() returned something' );
 ok( $conv->isa('HTML::TextToHTML'), "  and it's the right class" );
 
+$conv->args(
+	system_link_dict=>'txt2html.dict',
+	default_link_dict=>'',
+	);
+
 # test the process_para method alone
 $test_str = "Matty had a little truck
 he drove it round and round
@@ -78,11 +83,6 @@ is($out_str, $ok_str, 'compare converted string with OK string');
 $test_str = "I like to look at http://www.example.com a lot";
 
 $ok_str = 'I like to look at <A HREF="http://www.example.com">http://www.example.com</A> a lot';
-
-$conv->args(
-	system_link_dict=>'txt2html.dict',
-	default_link_dict=>'',
-	);
 
 $out_str = $conv->process_para($test_str, is_fragment=>1);
 ok($out_str, 'converted sample string with list');

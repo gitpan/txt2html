@@ -5,18 +5,21 @@ Note that TextToHTML.pm is generated from TextToHTML.in, so don't waste
 time editing the .pm file. Likewise, edit the txt2html.in file if you
 want to change the script.
 
-When incrementing the VERSION, do it in two places:
-- TextToHTML.in
-- txt2html.in
-This is because the version of the whole package is taken from the module,
-and it would be very confusing if the script version was different,
-considering they're distributed in the same bundle.
+Changing the version
+--------------------
 
-One also needs to change it in the README file.
+1. Edit the version.txt file to increment the version
+2. "Build bump_version" (this changes the version in all the needed files)
+3. "Build distclean"
+4. "perl Build.PL"
+5. "Build"
+6. "Build test"
 
-One also needs to change the META tag in tfiles/good_*.html (the ones
-that have a META tag) so that the version there matches the new current
-version.
+You need to rebuild the Build file because Module::Build sets the version
+information when the Build file is built, rather than it being dynamic.
+
+Adding Options
+--------------
 
 All new options need to be added in five places:
 - TextToHTML.in init_our_args(), to initialize the default
@@ -26,6 +29,9 @@ All new options need to be added in five places:
 - TextToHTML.in OPTIONS documentation
 - txt2html.in Getopt call, including its type and possible shortnames
 - txt2html.in OPTIONS documentation
+
+Changing the System Link Dictionary
+-----------------------------------
 
 If you want to change the location of the default system link
 dictionary, it needs to be changed in the MyBuilder.pm file, as

@@ -1,6 +1,10 @@
 Revision history for txt2html
 =============================
 
+2.31 Tue 21st September 2004
+	- fixed bug with install
+	- did some changes to help version-changing
+
 2.30 Fri 27th August 2004
 	- changed build system over to Module::Build to eliminate problems
 with different versions of ExtUtils::MakeMaker and the installation of

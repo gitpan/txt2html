@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name: txt2html
-version: 2.30
+version: 2.31
 author: Kathryn Andersen
 abstract: convert plain text file to HTML
 license: perl

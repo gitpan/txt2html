@@ -2,7 +2,7 @@ use MyBuilder;
 my $build = MyBuilder->new(
     module_name	=> 'HTML::TextToHTML',
     dist_name		=> 'txt2html',
-    dist_version_from	=> 'TextToHTML.in', # finds $VERSION
+    dist_version_from	=> 'txt2html.in',
     requires		=> {
 		'perl'	=> '5.6.0',
 		'Getopt::Long' => 0,

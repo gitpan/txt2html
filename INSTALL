@@ -44,7 +44,21 @@ the PERL5LIB variable to add /home/fred/perl/lib
 	PERL5LIB=/home/fred/perl/lib:${PERL5LIB}
 
 Note that the system links dictionary will be installed as
-"/home/fred/perl/share/txt2html/txt2html.dict
+"/home/fred/perl/share/txt2html/txt2html.dict"
+
+If you want to install in a temporary install directory (such as
+if you are building a package) then instead of going
+
+   perl Build install
+
+go
+
+   perl Build install destdir=/my/temp/dir
+
+and it will be installed there, with a directory structure under
+/my/temp/dir the same as it would be if it were installed plain.
+Note that this is NOT the same as setting --install_base, because
+certain things are done at build-time which use the install_base info.
 
 See "perldoc perlrun" for more information on PERL5LIB, and
 see "perldoc Module::Build" for more information on

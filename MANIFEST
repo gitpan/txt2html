@@ -72,3 +72,5 @@ tfiles/table-pgsql2.txt
 TODO
 txt2html.dict
 txt2html.in
+version.txt
+old_version.txt

@@ -1,6 +1,13 @@
 Revision history for txt2html
 =============================
 
+2.04 Tue 4th November 2003
+	- changed Makefile.PL to fix $(PREFIX)
+	- use "#!/usr/bin/env perl" trick (courtesy of Sami Haahtinen)
+instead of using ExtUtils::configPL module
+	- made Getopt::ArgvFile an official prerequisite
+	- enabled CAPS tagging to be optional (just give an empty caps_tag)
+
 2.03 Tue 15th July 2003
 	- fixed bug with para tests (it didn't fail on my system
 because it was using the already installed system links dictionary)

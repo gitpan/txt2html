@@ -1,5 +1,4 @@
-use ExtUtils::configPL;
-<<--startperl-->> -w
+#!/usr/bin/env perl
 ##---------------------------------------------------------------------------##
 
 =head1 NAME
@@ -99,6 +98,7 @@ For example, "class='withimage'".
 
 Tag to put around all-caps lines
 (default: STRONG)
+If an empty tag is given, then no tag will be put around all-caps lines.
 
 =item --custom_heading_regexp I<regexp> | --heading I<regexp> | -H I<regexp>
 
@@ -630,11 +630,12 @@ modify it under the same terms as Perl itself.
 # Globals
 #
 use vars qw($VERSION);
-$VERSION = '2.03';
+$VERSION = '2.04';
 
 #################################################################
 # Includes
 require 5.005_03;
+use strict;
 use Pod::Usage;
 use Getopt::Long;
 use File::Basename;

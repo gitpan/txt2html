@@ -1,6 +1,6 @@
 #########################
 
-use Test::More tests => 11;
+use Test::More tests => 13;
 use HTML::TextToHTML;
 ok(1); # If we made it this far, we are ok.
 
@@ -16,7 +16,9 @@ $conv->args(
 	default_link_dict=>'',
 	);
 
+#
 # test the process_para method alone
+#
 $test_str = "Matty had a little truck
 he drove it round and round
 and everywhere that Matty went
@@ -35,7 +37,9 @@ ok($out_str, 'converted sample string');
 # compare the result
 is($out_str, $ok_str, 'compare converted string with OK string');
 
+#
 # test the process_para method with an ordered list
+#
 $test_str = "Here is my list:
 
 1. Spam
@@ -60,7 +64,9 @@ ok($out_str, 'converted sample string with list');
 # compare the result
 is($out_str, $ok_str, 'compare converted list string with OK list string');
 
+#
 # test with is_fragment
+#
 $test_str = "Matty had a little truck
 he drove it round and round
 and everywhere that Matty went
@@ -79,13 +85,35 @@ ok($out_str, 'converted sample string');
 # compare the result
 is($out_str, $ok_str, 'compare converted string with OK string');
 
+#
 # test the process_para method with a URL
+#
 $test_str = "I like to look at http://www.example.com a lot";
 
 $ok_str = 'I like to look at <A HREF="http://www.example.com">http://www.example.com</A> a lot';
 
 $out_str = $conv->process_para($test_str, is_fragment=>1);
-ok($out_str, 'converted sample string with list');
+ok($out_str, 'converted sample string with URL');
 
 # compare the result
-is($out_str, $ok_str, 'compare converted list string with OK list string');
+is($out_str, $ok_str, 'compare converted URL string with OK URL string');
+
+#
+# test process_para with caps_tag turned off
+#
+$test_str = "We have a line alone
+FULL OF CAPS AND FURY
+";
+
+$ok_str = "We have a line alone<BR>
+FULL OF CAPS AND FURY
+";
+
+$conv->args(caps_tag=>'');
+$out_str = $conv->process_para($test_str, is_fragment=>1);
+ok($out_str, 'converted sample string with CAPS');
+
+# compare the result
+is($out_str, $ok_str, 'compare converted CAPS string with OK CAPS string');
+
+$conv->args(caps_tag=>'STRONG'); # restore caps to default

@@ -16,5 +16,5 @@ sample.txt
 t/10para.t
 t/30sample.t
 t/50xsample.t
-txt2html.PL
+txt2html
 txt2html.dict

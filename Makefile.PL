@@ -6,7 +6,7 @@ use ExtUtils::MakeMaker;
 # copy the link dictionary to a known global spot.
 sub MY::install {
 	package MY;
-	my $dest_dir = '/usr/share/txt2html';
+	my $dest_dir = '$(PREFIX)/usr/share/txt2html';
 	my $link_dict = 'txt2html.dict';
 	my $script = shift->SUPER::install(@_);
 	$script =~ s/install :: (.*)$/install :: $1 install_link_dictionary/m;
@@ -27,17 +27,15 @@ WriteMakefile(
     'DISTNAME'		=> 'txt2html',
     'VERSION_FROM'	=> 'TextToHTML.pm', # finds $VERSION
     'PREREQ_PM'		=> {
-		'Filter::Util::Call' => 0,
-		'ExtUtils::configPL' => 0,
 		'Getopt::Long' => 0,
+		'Getopt::ArgvFile' => 0,
 		'File::Basename' => 0,
 		'Pod::Usage' => 0,
 		'Data::Dumper' => 0,
 		'Test::More' => 0
     	},
-    'PL_FILES' => { 'txt2html.PL' => 'txt2html'},
     'EXE_FILES' => ['txt2html'],
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
-      (ABSTRACT_FROM => 'txt2html.PL', # retrieve abstract from module
+      (ABSTRACT_FROM => 'txt2html', # retrieve abstract from module
        AUTHOR     => 'Kathryn Andersen') : ()),
 );

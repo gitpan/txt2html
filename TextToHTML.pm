@@ -146,6 +146,7 @@ For example, "class='withimage'".
 
 Tag to put around all-caps lines
 (default: STRONG)
+If an empty tag is given, then no tag will be put around all-caps lines.
 
 =item custom_heading_regexp
 
@@ -579,7 +580,7 @@ BEGIN {
   run_txt2html
 );
 $PROG = 'HTML::TextToHTML';
-$VERSION = '2.03';
+$VERSION = '2.04';
 
 #------------------------------------------------------------------------
 use constant TEXT_TO_HTML => "TEXT_TO_HTML";
@@ -2508,7 +2509,8 @@ sub caps {
     my $line_ref        = $args{line_ref};
     my $line_action_ref = $args{line_action_ref};
 
-    if ($self->iscaps(${$line_ref})) {
+    if ($self->{caps_tag}
+	&& $self->iscaps(${$line_ref})) {
         $self->tagline($self->{caps_tag}, $line_ref);
         ${$line_action_ref} |= $CAPS;
     }

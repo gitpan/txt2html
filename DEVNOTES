@@ -8,8 +8,8 @@ This is because the version of the whole package is taken from the module,
 and it would be very confusing if the script version was different,
 considering they're distributed in the same bundle.
 One also needs to change the META tag in
-- good_sample.html
-- good_xhtml_sample.html
+- tfiles/good_sample.html
+- tfiles/good_xhtml_sample.html
 so that the version there matches the new current version.
 
 All new options need to be added in five places:

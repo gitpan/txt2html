@@ -1,6 +1,12 @@
 Revision history for txt2html
 =============================
 
+2.06 Sun 15th November 2003
+	- fixed bug with processing STDIN (ie piping input to txt2html)
+	- moved test input files into separate tfiles directory
+	- added in most of Seth's old test files to the testing; and fixed
+resulting bugs that were flushed out of cover
+
 2.05 Wed 5th November 2003
 	- error in fix to PREFIX! Argh!
 

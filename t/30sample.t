@@ -78,9 +78,9 @@ $result = $conv->txt2html(
 system_link_dict=>"txt2html.dict",
 default_link_dict=>"",
 #links_dictionaries=>"section.dict",
-infile=>["sample.txt"],
+infile=>["tfiles/sample.txt"],
 outfile=>"sample.html",
-append_file=>"sample.foot",
+append_file=>"tfiles/sample.foot",
 titlefirst=>1, mailmode=>1,
 custom_heading_regexp=>['^ *--[\w\s]+-- *$'],
 make_tables=>1,
@@ -90,7 +90,7 @@ make_tables=>1,
 ok($result, 'converted sample.txt');
 
 # compare the files
-$result = compare('good_sample.html', 'sample.html');
+$result = compare('tfiles/good_sample.html', 'sample.html');
 ok($result, 'test file matches original example exactly');
 if ($result) {
     unlink('sample.html');

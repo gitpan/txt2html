@@ -80,10 +80,10 @@ ok( $conv->isa('HTML::TextToHTML'), "  and it's the right class" );
 push @args, "--system_link_dict", "txt2html.dict";
 push @args, "--default_link_dict", "";
 #push @args, "--link_dictionaries", "section.dict";
-push @args, "--infile", "sample.txt";
+push @args, "--infile", "tfiles/sample.txt";
 push @args, "--xhtml"; 
 push @args, "--outfile", "xhtml_sample.html";
-push @args, "--append_file", "sample.foot2";
+push @args, "--append_file", "tfiles/sample.foot2";
 push @args, "-titlefirst", "--mailmode";
 push @args, "--custom_heading_regexp", '^ *--[\w\s]+-- *$';
 push @args, "--make_tables";
@@ -93,7 +93,7 @@ $result = $conv->txt2html(\@args);
 ok($result, 'converted xhtml sample.txt');
 
 # compare the files
-$result = compare('good_xhtml_sample.html', 'xhtml_sample.html');
+$result = compare('tfiles/good_xhtml_sample.html', 'xhtml_sample.html');
 ok($result, 'test file xhtml_sample.html matches original good_xhtml_sample.html exactly');
 
 if ($result) {

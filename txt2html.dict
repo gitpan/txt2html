@@ -89,7 +89,7 @@
   -h-> ftp <A HREF="ftp://$1/">$1</A>
 
 # host with "ftp" in the machine name
-|(^|[^\w\d\-/\.:!])(([a-zA-Z][\w+\-]*)?ftp[\w+\-]*\.[\w\.+\-]+\.[a-zA-Z]{2,})([^\w\d\-/\.:!])|
+|(^|[^\w\d\-/\.:!]|^<P>)(([a-zA-Z][\w+\-]*)?ftp[\w+\-]*\.[\w\.+\-]+\.[a-zA-Z]{2,})([^\w\d\-/\.:!])|
   -h-> $1ftp <A HREF="ftp://$2/">$2</A>$4
 
 # ftp.foo.net/blah/
@@ -99,7 +99,7 @@
 |www(\.[a-zA-Z0-9_\@:-]+)+/\S+| -> http://$&
 
 # host with "www" in the machine name
-|(^|[^\w\d\-/\.:!])(([a-zA-Z][\w+\-]*)?www[\w+\-]*\.[\w\.+\-]+\.[a-zA-Z]{2,})([^\w\d\-/\.:!\@])|
+|(^|[^\w\d\-/\.:!]|^<P>)(([a-zA-Z][\w+\-]*)?www[\w+\-]*\.[\w\.+\-]+\.[a-zA-Z]{2,})([^\w\d\-/\.:!\@])|
   -h-> $1<A HREF="http://$2/">$2</A>$4
 
 # <site> <port>

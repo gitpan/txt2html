@@ -1,7 +1,7 @@
 #! /usr/bin/perl
 #------------------------------------------------------------------------
 
-=head1 HTML::TextToHTML
+=head1 NAME
 
 HTML::TextToHTML - convert plain text file to HTML
 
@@ -580,7 +580,7 @@ BEGIN {
   run_txt2html
 );
 $PROG = 'HTML::TextToHTML';
-$VERSION = '2.05';
+$VERSION = '2.06';
 
 #------------------------------------------------------------------------
 use constant TEXT_TO_HTML => "TEXT_TO_HTML";
@@ -1205,9 +1205,17 @@ sub txt2html ($;$) {
     local $/ = "";
     my $para  = '';
     my $count = 0;
+    my $inhandle;
     foreach my $file (@{$self->{infile}}) {
-        if (-f $file && open(IN, $file)) {
-            while (<IN>) {
+        if ((-f $file && open(IN, $file))
+	    || $file eq '-' ) {
+	    if ($file eq '-') { # stdin
+		$inhandle = *STDIN;
+	    }
+	    else {
+		$inhandle = *IN;
+	    }
+            while (<$inhandle>) {
                 $para = $_;
                 $para =~ s/\n$//;    # trim the endline
                 if ($count == 0) {
@@ -1219,6 +1227,9 @@ sub txt2html ($;$) {
                 print $outhandle $para, "\n";
                 $count++;
             }
+	    if ($file ne '-') { # not stdin
+		close(IN);
+	    }
         }
     }
 
@@ -1230,8 +1241,12 @@ sub txt2html ($;$) {
 			line_action_ref=>\$self->{__line_action})
     }
     print $outhandle $self->{__prev};
-    if ($self->{xhtml})
+    if ($self->{xhtml} && !$self->{extract})
     {
+	if ($self->{dict_debug} & 8)
+	{
+	    print STDERR "closing all tags at end\n";
+	}
 	# close any open tags (until we get to the body)
 	my $open_tag = @{$self->{__tags}}[$#{$self->{__tags}}];
 	while (@{$self->{__tags}}
@@ -1542,7 +1557,7 @@ sub get_tag ($$;%) {
     }
 
     return $out_tag;
-}
+} # get_tag
 
 # close the open tag
 sub close_tag ($$) {

@@ -1,6 +1,14 @@
 Revision history for txt2html
 =============================
 
+2.32 Wed 5th January 2005
+	- fixed bug with demoronize code
+	- fixed documentation for lower_case_tags
+	- changed around installation so that no custom Module::Builder
+is needed; also moved files into more customary places, and now use
+Filter::Simple to change the system dictionary path in the module
+and script files for installation.
+
 2.31 Tue 21st September 2004
 	- fixed bug with install
 	- did some changes to help version-changing
@@ -122,7 +130,6 @@ the version jump.
 	  * multi-paragraph list items 
 	  * the heading_callback_customize stuff
 
-Revision history for Perl module HTML::TextToHTML.
 ==================================================
 
 1.12 Sat 15th February 2002
@@ -225,7 +232,6 @@ link dictionary)
 
 -----------------------------------------------------------------
 
-Revision history of txt2html script from 1.28 to 1.35
 =====================================================
 (cvs log on Sourceforge)
 
@@ -286,7 +292,6 @@ date: 2002/12/01 18:28:35;  author: suntong;  state: Exp;  lines: +3 -2
 | indentation level.
 `-----
 
-Revision history of original txt2html script up to 1.28
 =======================================================
 
 1.28

@@ -1,15 +1,15 @@
 Developer Notes
 ===============
 
-Note that TextToHTML.pm is generated from TextToHTML.in, so don't waste
-time editing the .pm file. Likewise, edit the txt2html.in file if you
-want to change the script.
+Note that lib/HTML/TextToHTML.pm is generated from lib/HTML/TextToHTML.PL, so
+don't waste time editing the .pm file. Likewise, edit the scripts/txt2html.PL
+file if you want to change the script.
 
 Changing the version
 --------------------
 
 1. Edit the version.txt file to increment the version
-2. "Build bump_version" (this changes the version in all the needed files)
+2. "moddevaid VERSION" (this changes the version in all the needed files)
 3. "Build distclean"
 4. "perl Build.PL"
 5. "Build"
@@ -22,29 +22,29 @@ Adding Options
 --------------
 
 All new options need to be added in five places:
-- TextToHTML.in init_our_args(), to initialize the default
-- TextToHTML.in args() in the parse-the-array-ref part, unless
+- lib/HTML/TextToHTML.PL init_our_args(), to initialize the default
+- lib/HTML/TextToHTML.PL args() in the parse-the-array-ref part, unless
   it is a simple option-with-a-value.  If it is a boolean option,
   it also needs to be added in its "no" form.
-- TextToHTML.in OPTIONS documentation
-- txt2html.in Getopt call, including its type and possible shortnames
-- txt2html.in OPTIONS documentation
+- lib/HTML/TextToHTML.PL OPTIONS documentation
+- scripts/txt2html.PL Getopt call, including its type and possible shortnames
+- scripts/txt2html.PL OPTIONS documentation
 
 Changing the System Link Dictionary
 -----------------------------------
 
 If you want to change the location of the default system link
-dictionary, it needs to be changed in the MyBuilder.pm file, as
-that is where the location is calculated, and where the UpdatePath.PL
-file gets it from in order to change it in the .in files.
+dictionary, it needs to be changed in the Build.PL file, as
+that is where the location is calculated, and where the *.PL
+files gets it from in order to generate the script and .pm files.
 (Note that this is only for changing the default location; the location
 obeys the install_base option of Build.PL when that's called.)
 
 If you want to change the *name* of the default system link dictionary,
 it needs to be changed in:
-- MyBuilder.pm
-- TextToHTML.in init_our_args()
-- TextToHTML.in OPTIONS documentation
+- Build.PL
+- lib/HTML/TextToHTML.PL init_our_args()
+- lib/HTML/TextToHTML.PL OPTIONS documentation
 - txt2html OPTIONS documentation
 
 Release Notes

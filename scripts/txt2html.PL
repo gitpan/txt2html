@@ -1,3 +1,4 @@
+use MyUpdatePath;
 #!/usr/bin/env perl
 ##---------------------------------------------------------------------------##
 
@@ -19,8 +20,8 @@ txt2html [ --append_file I<filename> ] [ --append_head I<filename> ]
     [ --doctype I<doctype> ] [ --eight_bit_clean ] [ --escape_HTML_chars ]
     [ --explicit_headings ] [ --extract ] [ --hrule_min I<n> ]
     [ --indent_width I<n> ] [ --indent_par_break ] { --infile I<filename> }
-    [ --italic_delimiter I<string> ]
-    { --links_dictionaries I<filename> } [ --link_only ] [ --mailmode ]
+    [ --italic_delimiter I<string> ] { --links_dictionaries I<filename> }
+    [ --link_only ] [ --lower_case_tags ] [ --mailmode ]
     [ --make_anchors ] [ --make_tables ] [ --min_caps_length I<n> ]
     [ --outfile I<filename> ] [ --par_indent I<n> ]
     [ --preformat_trigger_lines I<n> ] [ --endpreformat_trigger_lines I<n> ]
@@ -262,6 +263,10 @@ the linking feature on an HTML document.  If the HTML is a
 complete document (includes HTML,HEAD,BODY tags, etc) then you'll
 probably want to use the --extract option also.
 (default: false)
+
+=item --lower_case_tags
+
+Force all the tags to be in lower-case.
 
 =item --mailmode | -m
 
@@ -753,7 +758,7 @@ modify it under the same terms as Perl itself.
 # Globals
 #
 use vars qw($VERSION);
-$VERSION = '2.31';
+$VERSION = '2.32';
 
 #################################################################
 # Includes

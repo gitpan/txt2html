@@ -1,3 +1,5 @@
+use MyUpdatePath;
+package HTML::TextToHTML;
 #------------------------------------------------------------------------
 
 =head1 NAME
@@ -359,6 +361,12 @@ complete document (includes HTML,HEAD,BODY tags, etc) then you'll
 probably want to use the --extract option also.
 (default: false)
 
+=item lower_case_tags
+
+     lower_case_tags=>1
+
+Force all tags to be in lower-case.
+
 =item mailmode
 
     mailmode=>1
@@ -605,7 +613,6 @@ into lower-case.
 =cut
 
 #------------------------------------------------------------------------
-package HTML::TextToHTML;
 
 use 5.005_03;
 use strict;
@@ -640,7 +647,7 @@ BEGIN {
   run_txt2html
 );
 $PROG = 'HTML::TextToHTML';
-$VERSION = '2.31';
+$VERSION = '2.32';
 
 #------------------------------------------------------------------------
 use constant TEXT_TO_HTML => "TEXT_TO_HTML";
@@ -1851,7 +1858,6 @@ sub demoronize_char($) {
     $s =~ s/\x85/.../g;
 
     $s =~ s/\x88/^/g;
-    $s =~ s-\x89- °/°°-g;
 
     $s =~ s/\x8B/</g;
     $s =~ s/\x8C/Oe/g;

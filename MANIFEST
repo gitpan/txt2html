@@ -1,5 +1,5 @@
 Build.PL
-UpdatePath.PL
+MyUpdatePath.pm
 Changes
 DEVNOTES
 INSTALL
@@ -8,14 +8,13 @@ Makefile.PL
 MANIFEST
 MANIFEST.SKIP
 META.yml			Module meta-data (added by MakeMaker)
-MyBuilder.pm
 README
 t/10para.t
 t/20tfiles.t
 t/30sample.t
 t/50xsample.t
 t/70bugs.t
-TextToHTML.in
+lib/HTML/TextToHTML.PL
 tfiles/custom-headers.txt
 tfiles/custom-headers2.txt
 tfiles/empty.txt
@@ -71,6 +70,6 @@ tfiles/table-pgsql.txt
 tfiles/table-pgsql2.txt
 TODO
 txt2html.dict
-txt2html.in
+scripts/txt2html.PL
 version.txt
 old_version.txt

@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name: txt2html
-version: 2.32
+version: 2.33
 author:
   - Kathryn Andersen
 abstract: convert plain text file to HTML
@@ -16,5 +16,8 @@ build_requires:
   Filter::Simple: 0.79
   Module::Build: 0.26
   Test::More: 0
-provides: {}
+provides:
+  HTML::TextToHTML:
+    file: lib/HTML/TextToHTML.pm
+    version: 2.33
 generated_by: Module::Build version 0.2607

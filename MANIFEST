@@ -2,20 +2,21 @@ Changes
 DEVNOTES
 INSTALL
 LICENSE
+Makefile.PL
 MANIFEST
 MANIFEST.SKIP
-Makefile.PL
 README
-TODO
-TextToHTML.pm
 t/10para.t
 t/20tfiles.t
 t/30sample.t
 t/50xsample.t
+TextToHTML.pm
 tfiles/custom-headers.txt
 tfiles/custom-headers2.txt
+tfiles/empty.txt
 tfiles/good_custom-headers.html
 tfiles/good_custom-headers2.html
+tfiles/good_empty.html
 tfiles/good_hyphens.html
 tfiles/good_links.html
 tfiles/good_links2.html
@@ -57,5 +58,7 @@ tfiles/table-border.txt
 tfiles/table-delim.txt
 tfiles/table-pgsql.txt
 tfiles/table-pgsql2.txt
+TODO
 txt2html
 txt2html.dict
+META.yml                                 Module meta-data (added by MakeMaker)

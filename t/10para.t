@@ -1,6 +1,6 @@
 #########################
 
-use Test::More tests => 13;
+use Test::More tests => 14;
 use HTML::TextToHTML;
 ok(1); # If we made it this far, we are ok.
 
@@ -62,6 +62,19 @@ ok($out_str, 'converted sample string with list');
 
 # compare the result
 is($out_str, $ok_str, 'compare converted list string with OK list string');
+
+#
+# test the process_chunk method with an empty string
+#
+$test_str = "";
+
+$ok_str = "";
+
+$out_str = $conv->process_chunk($test_str);
+# note we do not do an ok on this because it should be empty
+
+# compare the result
+is($out_str, $ok_str, 'compare converted empty string with OK empty string');
 
 #
 # test with is_fragment

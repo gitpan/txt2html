@@ -611,7 +611,7 @@ BEGIN {
   run_txt2html
 );
 $PROG = 'HTML::TextToHTML';
-$VERSION = '2.20';
+$VERSION = '2.21';
 
 #------------------------------------------------------------------------
 use constant TEXT_TO_HTML => "TEXT_TO_HTML";
@@ -1091,7 +1091,7 @@ sub process_para ($$;%) {
 		    $ind = count_indent($line, 0);
 		    push @para_line_indent, $ind;
 		}
-		push @para_line_action, 0;
+		push @para_line_action, $NONE;
 		$para_lines[$i] = $line;
 	    }
 
@@ -1352,6 +1352,9 @@ sub process_para ($$;%) {
 
 	    # para action is the action of the last line of the para
 	    $para_action = $para_line_action[$#para_line_action];
+	    if (!defined $para_action) {
+		$para_action = $NONE;
+	    }
 
 	    # push them on the done lines
 	    push @done_lines, @para_lines;
@@ -1366,7 +1369,7 @@ sub process_para ($$;%) {
 	if ($self->{xhtml})
 	{
 	    my $open_tag = @{$self->{__tags}}[$#{$self->{__tags}}];
-	    if ($open_tag eq 'P')
+	    if (defined $open_tag && $open_tag eq 'P')
 	    {
 		$para .= $self->close_tag('P');
 	    }
@@ -1463,11 +1466,11 @@ sub txt2html ($;$) {
         $not_to_stdout = 1;
     }
 
-
-    # slurp up a paragraph at a time
+    # slurp up a paragraph at a time, a file at a time
     local $/ = "";
     my $para  = '';
     my $count = 0;
+    my $print_count = 0;
     my $inhandle;
     foreach my $file (@{$self->{infile}}) {
         if ((-f $file && open(IN, $file))
@@ -1488,6 +1491,7 @@ sub txt2html ($;$) {
                 $para = $self->process_para($para, 
 		    close_tags=>0);
                 print $outhandle $para, "\n";
+                $print_count++;
                 $count++;
             }
 	    if ($file ne '-') { # not stdin
@@ -1504,7 +1508,11 @@ sub txt2html ($;$) {
 			line_action_ref=>\$self->{__line_action})
     }
     print $outhandle $self->{__prev};
-    if ($self->{xhtml} && !$self->{extract})
+
+    # close all open tags
+    if ($self->{xhtml}
+	&& !$self->{extract}
+	&& @{$self->{__tags}})
     {
 	if ($self->{dict_debug} & 8)
 	{
@@ -1527,6 +1535,7 @@ sub txt2html ($;$) {
             open(APPEND, $self->{append_file});
             while (<APPEND>) {
                 print $outhandle $_;
+		$print_count++;
             }
             close(APPEND);
         }
@@ -1536,7 +1545,8 @@ sub txt2html ($;$) {
         }
     }
 
-    if (!$self->{extract}) {
+    # print the closing tags (if we have printed stuff at all)
+    if ($print_count && !$self->{extract}) {
         print $outhandle $self->get_tag('BODY', tag_type=>'end'), "\n";
         print $outhandle $self->get_tag('HTML', tag_type=>'end'), "\n";
     }
@@ -1869,7 +1879,8 @@ sub close_tag ($$) {
 	$out_tag =~ s/($in_tag)/\U$1/;
     }
     $out_tag = "<\/${out_tag}>";
-    if ($open_tag eq $in_tag)
+    if (defined $open_tag
+	&& $open_tag eq $in_tag)
     {
 	pop @{$self->{__tags}};
     }
@@ -2144,7 +2155,7 @@ sub listprefix ($$) {
     my $bullets_ordered = $self->{bullets_ordered};
     my $number_match = '(\d+|[^\W\d])';
     if ($bullets_ordered) {
-	$number_match = "(\d+|[a-zA-Z]|[${bullets_ordered}])";
+	$number_match = '(\d+|[a-zA-Z]|[' . "${bullets_ordered}])";
     }
     $self->{__number_match} = $number_match;
     my $term_match = '(\w\w+)';
@@ -2530,7 +2541,7 @@ sub is_aligned_table ($%) {
     # which case it must not be incorrectly recognised as a preformat.
     my @rows = @{$rows_ref};
     my @starts;
-    my $spaces;
+    my $spaces = '';
     my $max = 0;
     my $min = $para_len;
     foreach my $row (@rows) {
@@ -3432,7 +3443,7 @@ sub is_ul_list_line ($%) {
     my $line	= $args{line};
 
     my ($prefix, $number, $rawprefix, $term) = $self->listprefix($line);
-    if ($prefix && $number == 0)
+    if ($prefix && !$number)
     {
 	return 1;
     }
@@ -3892,7 +3903,13 @@ sub check_dictionary_links ($%) {
     my $key;
     my $s_sw;
     my $r_sw;
-    my ($line_link) = (${$line_action_ref} | $LINK);
+    my $line_link = 0;
+    if (defined ${$line_action_ref}) {
+	($line_link) = (${$line_action_ref} | $LINK);
+    }
+    else {
+	warn "check_dictionary_links: \\line_action_ref undefined!\n";
+    }
     my ($before, $linkme, $line_with_links);
 
     # for each pattern, check and alter the line

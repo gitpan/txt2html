@@ -10,6 +10,20 @@ To install this module type the following:
    make test
    make install
 
+In order to install somewhere other than the default, go
+
+   perl Makefile.PL PREFIX=/where/you/want/the/files
+
+as the first step instead.
+
+See "perldoc ExtUtils::MakeMaker" for more information.
+
+If your modules are somewhere other than the usual place, then it may
+be necessary to edit the first line to add
+	-I /where/you/want/the/files
+
+Or edit the environment variable PERLLIB or PERL5LIB to add that directory.
+
 DEPENDENCIES
 
 This module requires these other modules and libraries:

@@ -2,7 +2,7 @@
 
 #########################
 
-use Test::More tests => 40;
+use Test::More tests => 48;
 use HTML::TextToHTML;
 
 #########################
@@ -12,8 +12,16 @@ sub compare {
     my $file1 = shift;
     my $file2 = shift;
 
-    open(F1, $file1) || return 0;
-    open(F2, $file2) || return 0;
+    if (!open(F1, $file1))
+    {
+    	print "error - $file1 did not open\n";
+	return 0;
+    }
+    if (!open(F2, $file2))
+    {
+    	print "error - $file2 did not open\n";
+	return 0;
+    }
 
     my $res = 1;
     my $count = 0;
@@ -503,5 +511,105 @@ $result = compare('tfiles/good_table-delim.html', 'table-delim.html');
 ok($result, 'test file matches original example exactly');
 if ($result) {
     unlink('table-delim.html');
+}
+
+#
+# an EMPTY file (non-extracted)
+#
+$conv = undef;
+$conv = new HTML::TextToHTML();
+
+$result = $conv->txt2html(
+system_link_dict=>"txt2html.dict",
+default_link_dict=>"",
+extract=>0,
+xhtml=>0,
+infile=>["tfiles/empty.txt"],
+outfile=>"empty1.html",
+#debug=>1,
+#dict_debug=>15,
+);
+ok($result, 'converted empty.txt (default)');
+
+# compare the files
+$result = compare('tfiles/good_empty.html', 'empty1.html');
+ok($result, 'test file matches original example exactly');
+if ($result) {
+    unlink('empty1.html');
+}
+
+#
+# an EMPTY file (non-extracted) (xhtml)
+#
+$conv = undef;
+$conv = new HTML::TextToHTML();
+
+$result = $conv->txt2html(
+system_link_dict=>"txt2html.dict",
+default_link_dict=>"",
+extract=>0,
+xhtml=>1,
+infile=>["tfiles/empty.txt"],
+outfile=>"empty2.html",
+#debug=>1,
+#dict_debug=>15,
+);
+ok($result, 'converted empty.txt (xhtml)');
+
+# compare the files
+$result = compare('tfiles/good_empty.html', 'empty2.html');
+ok($result, 'test file matches original example exactly');
+if ($result) {
+    unlink('empty2.html');
+}
+
+#
+# an EMPTY file (extracted)
+#
+$conv = undef;
+$conv = new HTML::TextToHTML();
+
+$result = $conv->txt2html(
+system_link_dict=>"txt2html.dict",
+default_link_dict=>"",
+extract=>1,
+xhtml=>0,
+infile=>["tfiles/empty.txt"],
+outfile=>"empty3.html",
+#debug=>1,
+#dict_debug=>15,
+);
+ok($result, 'converted empty.txt (extract)');
+
+# compare the files
+$result = compare('tfiles/good_empty.html', 'empty3.html');
+ok($result, 'test file matches original example exactly');
+if ($result) {
+    unlink('empty3.html');
+}
+
+#
+# an EMPTY file (extracted) (xhtml)
+#
+$conv = undef;
+$conv = new HTML::TextToHTML();
+
+$result = $conv->txt2html(
+system_link_dict=>"txt2html.dict",
+default_link_dict=>"",
+extract=>1,
+xhtml=>1,
+infile=>["tfiles/empty.txt"],
+outfile=>"empty4.html",
+#debug=>1,
+#dict_debug=>15,
+);
+ok($result, 'converted empty.txt (extract) (xhtml)');
+
+# compare the files
+$result = compare('tfiles/good_empty.html', 'empty4.html');
+ok($result, 'test file matches original example exactly');
+if ($result) {
+    unlink('empty4.html');
 }
 

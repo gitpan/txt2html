@@ -1,6 +1,10 @@
 Revision history for txt2html
 =============================
 
+2.21 Sat 10th January 2004
+	- bugfixes with a stricter perl 5.8.2
+	- bugfix for processing empty file
+
 2.20 Sun 7th December 2003
 	- added --table_type option to say which types of table will
 be recognised and parsed if the --make_tables option is true.  In other

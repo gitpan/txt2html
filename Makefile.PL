@@ -6,7 +6,7 @@ use ExtUtils::MakeMaker;
 # copy the link dictionary to a known global spot.
 sub MY::install {
 	package MY;
-	my $dest_dir = '$(PREFIX)/share/txt2html';
+	my $dest_dir = '$(SITEPREFIX)/share/txt2html';
 	my $link_dict = 'txt2html.dict';
 	my $script = shift->SUPER::install(@_);
 	$script =~ s/install :: (.*)$/install :: $1 install_link_dictionary/m;

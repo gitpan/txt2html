@@ -1,6 +1,6 @@
 #########################
 
-use Test::More tests => 14;
+use Test::More tests => 18;
 use HTML::TextToHTML;
 ok(1); # If we made it this far, we are ok.
 
@@ -128,3 +128,48 @@ ok($out_str, 'converted sample string with CAPS');
 is($out_str, $ok_str, 'compare converted CAPS string with OK CAPS string');
 
 $conv->args(caps_tag=>'STRONG'); # restore caps to default
+
+#
+# Test with different italic/bold delimiters
+#
+$test_str = "I am ^bold^,
+You are --really krazy--.
+-----------------
+";
+
+$ok_str = "I am <STRONG>bold</STRONG>,<BR>
+You are <EM>really krazy</EM>.
+<HR>
+";
+
+$conv->args(bold_delimiter=>'^',
+	italic_delimiter=>'--');
+$out_str = $conv->process_chunk($test_str, is_fragment=>1);
+ok($out_str, 'converted sample string with delimiters');
+
+# compare the result
+is($out_str, $ok_str, 'compare converted delimiter string with OK delimiter string');
+
+# 
+# test with no bolding or italic at all
+$test_str = "I am ^bold^,
+You are --really krazy--.
+-----------------
+";
+
+$ok_str = "I am ^bold^,<BR>
+You are --really krazy--.
+<HR>
+";
+
+$conv->args(bold_delimiter=>'',
+	italic_delimiter=>'');
+$out_str = $conv->process_chunk($test_str, is_fragment=>1);
+ok($out_str, 'converted sample string with no bold');
+
+# compare the result
+is($out_str, $ok_str, 'compare converted no-bold string with OK no-bold string');
+
+# restore default
+$conv->args(bold_delimiter=>'#',
+	italic_delimiter=>'*');

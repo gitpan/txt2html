@@ -30,6 +30,7 @@ tfiles/good_list-advanced.html
 tfiles/good_list-custom.html
 tfiles/good_list-styles.html
 tfiles/good_list.html
+tfiles/good_mixed.html
 tfiles/good_news.html
 tfiles/good_pre.html
 tfiles/good_pre2.html
@@ -52,6 +53,7 @@ tfiles/list-advanced.txt
 tfiles/list-custom.txt
 tfiles/list-styles.txt
 tfiles/list.txt
+tfiles/mixed.txt
 tfiles/news.txt
 tfiles/pre.txt
 tfiles/pre2.txt

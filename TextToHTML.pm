@@ -140,6 +140,15 @@ Body decoration string: a string to be added to the BODY tag so that
 one can set attributes to the BODY (such as class, style, bgcolor etc)
 For example, "class='withimage'".
 
+=item bold_delimiter
+
+    bold_delimiter=>I<string>
+
+This defines what character (or string) is taken to be the delimiter of
+text which is to be interpreted as bold (that is, to be given a STRONG
+tag).  If this is empty, then no bolding of text will be done.
+(default: #)
+
 =item bullets
 
     bullets=>I<string>
@@ -315,6 +324,15 @@ be repeated for each new file added to the list.  If you want to reset
 the list to be empty, give the special value of "CLEAR".
 
 (default:-)
+
+=item italic_delimiter
+
+    italic_delimiter=>I<string>
+
+This defines what character (or string) is taken to be the delimiter of
+text which is to be interpreted as italic (that is, to be given a EM
+tag).  If this is empty, no italicising of text will be done.
+(default: *)
 
 =item links_dictionaries
 
@@ -495,7 +513,7 @@ output.
     system_link_dict=>I<filename>
 
 The name of the default "system" link dictionary.
-(default: "/usr/share/txt2html/txt2html.dict")
+(default: "/usr/local/share/txt2html/txt2html.dict")
 
 =item tab_width
 
@@ -622,7 +640,7 @@ BEGIN {
   run_txt2html
 );
 $PROG = 'HTML::TextToHTML';
-$VERSION = '2.24';
+$VERSION = '2.25';
 
 #------------------------------------------------------------------------
 use constant TEXT_TO_HTML => "TEXT_TO_HTML";
@@ -1415,12 +1433,39 @@ sub process_para ($$;%) {
 	}
     }
 
-    if ($self->{make_links}
-        && !is_blank($para)
-        && @{$self->{__links_table_order}})
+    # apply links and bold/italic formatting
+    if (!is_blank($para))
     {
-        $self->make_dictionary_links(line_ref=>\$para,
-	    line_action_ref=>\$para_action);
+	# split the paragraph into tags and non-tags
+	# and only apply the links to the non-tag units
+	my @units = split(/(<\/*[APTLHB][^>]*>)/i, $para);
+	for (my $i=0; $i < @units; $i++)
+	{
+	    if ($units[$i] !~ /^</)
+	    {
+		if ($self->{make_links}
+		    && @{$self->{__links_table_order}})
+		{
+		    $self->make_dictionary_links(line_ref=>\$units[$i],
+			    line_action_ref=>\$para_action);
+		}
+		if ($self->{bold_delimiter})
+		{
+		    $self->do_delim(line_ref=>\$units[$i],
+			    line_action_ref=>\$para_action,
+			    delim=>$self->{bold_delimiter},
+			    tag=>'STRONG');
+		}
+		if ($self->{italic_delimiter})
+		{
+		    $self->do_delim(line_ref=>\$units[$i],
+			    line_action_ref=>\$para_action,
+			    delim=>$self->{italic_delimiter},
+			    tag=>'EM');
+		}
+	    }
+	}
+	$para = join('', @units);
     }
 
     # close any open lists if required to
@@ -1614,6 +1659,7 @@ sub init_our_data ($) {
     $self->{body_deco} = '';
     $self->{bullets} = '-=o*\267';
     $self->{bullets_ordered} = '';
+    $self->{bold_delimiter} = '#';
     $self->{caps_tag} = 'STRONG';
     $self->{custom_heading_regexp} = [];
     $self->{default_link_dict} = "$ENV{HOME}/.txt2html.dict";
@@ -1628,6 +1674,7 @@ sub init_our_data ($) {
     $self->{indent_width} = 2;
     $self->{indent_par_break} = 0;
     $self->{infile} = [];
+    $self->{italic_delimiter} = '*';
     $self->{links_dictionaries} = [];
     $self->{link_only} = 0;
     $self->{lower_case_tags} = 0;
@@ -1647,7 +1694,7 @@ sub init_our_data ($) {
     $self->{preserve_indent} = 0;
     $self->{short_line_length} = 40;
     $self->{style_url} = '';
-    $self->{system_link_dict} = '/usr/share/txt2html/txt2html.dict';
+    $self->{system_link_dict} = '/usr/local/share/txt2html/txt2html.dict';
     $self->{tab_width} = 8;
     $self->{table_type} = {
 	ALIGN => 1,
@@ -3742,6 +3789,52 @@ sub caps {
     }
 } # caps
 
+sub do_delim {
+    my $self            = shift;
+    my %args = (
+	line_ref=>undef,
+	line_action_ref=>undef,
+	delim => '*',
+	tag => 'STRONG',
+	@_
+	);
+    my $line_ref        = $args{line_ref};
+    my $line_action_ref = $args{line_action_ref};
+    my $delim = $args{delim};
+    my $tag = $args{tag};
+
+    my $out_tag = $tag;
+    if ($self->{lower_case_tags})
+    {
+	$out_tag =~ s/($tag)/\L$1/;
+    }
+    else # upper case
+    {
+	$out_tag =~ s/($tag)/\U$1/;
+    }
+    
+    if ($delim eq '#') # special treatment of # for the #num case
+    {
+	${$line_ref} =~ s/#([^0-9#][^#]*[^# \t\n])#/<${out_tag}>$1<\/${out_tag}>/gs;
+	${$line_ref} =~ s/\B#([a-zA-Z])#\B/<${out_tag}>$1<\/${out_tag}>/gs;
+    }
+    elsif ($delim eq '^')
+    {
+	${$line_ref} =~ s/\^((\w|["'])[^^]*)\^/<${out_tag}>$1<\/${out_tag}>/gs;
+	${$line_ref} =~ s/\B\^([a-zA-Z])\^\B/<${out_tag}>$1<\/${out_tag}>/gs;
+    }
+    elsif (length($delim) eq 1) # one-character, general
+    {
+	${$line_ref} =~ s/(?<![${delim}])[${delim}]((\w|["'])[^${delim}]*)[${delim}]/<${out_tag}>$1<\/${out_tag}>/gs;
+	${$line_ref} =~ s/\B[${delim}]([a-zA-Z])[${delim}]\B/<${out_tag}>$1<\/${out_tag}>/gs;
+    }
+    else
+    {
+	${$line_ref} =~ s/(?<!${delim})${delim}((\w|["'])(\w|[-\s\.;:,!?"'])*[^\s])${delim}/<${out_tag}>$1<\/${out_tag}>/gs;
+	${$line_ref} =~ s/${delim}]([a-zA-Z])${delim}/<${out_tag}>$1<\/${out_tag}>/gs;
+    }
+} # do_delim
+
 # Convert very simple globs to regexps
 sub glob2regexp {
     my ($glob) = @_;
@@ -4332,7 +4425,8 @@ This entry matches a URL which was marked explicity as a URL
 with the pattern <URL:foo>  (note the &lt; is shown as the
 entity, not the actual character.  This is because by the
 time the links dictionary is checked, all such things have
-already been converted to their HTML entity forms)
+already been converted to their HTML entity forms, unless, of course,
+the escape_HTML_chars option was turned off)
 This would give us a link in the form
 <A HREF="foo">&lt;URL:foo&gt;</A>
 

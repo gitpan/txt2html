@@ -89,7 +89,7 @@
   -h-> ftp <A HREF="ftp://$1/">$1</A>
 
 # host with "ftp" in the machine name
-|(^|[^\w\d\-/\.:!]|^<P>)(([a-zA-Z][\w+\-]*)?ftp[\w+\-]*\.[\w\.+\-]+\.[a-zA-Z]{2,})([^\w\d\-/\.:!])|
+|(^|[^\w\d\-/\.:!])(([a-zA-Z][\w+\-]*)?ftp[\w+\-]*\.[\w\.+\-]+\.[a-zA-Z]{2,})([^\w\d\-/\.:!]|$)|
   -h-> $1ftp <A HREF="ftp://$2/">$2</A>$4
 
 # ftp.foo.net/blah/
@@ -99,17 +99,12 @@
 |www(\.[a-zA-Z0-9_\@:-]+)+/\S+| -> http://$&
 
 # host with "www" in the machine name
-|(^|[^\w\d\-/\.:!]|^<P>)(([a-zA-Z][\w+\-]*)?www[\w+\-]*\.[\w\.+\-]+\.[a-zA-Z]{2,})([^\w\d\-/\.:!\@])|
+|(^|[^\w\d\-/\.:!])(([a-zA-Z][\w+\-]*)?www[\w+\-]*\.[\w\.+\-]+\.[a-zA-Z]{2,})([^\w\d\-/\.:!\@]|$)|
   -h-> $1<A HREF="http://$2/">$2</A>$4
 
 # <site> <port>
 |([a-zA-Z][\w+\-]+\.[\w+\-]+\.[a-zA-Z]{2,})\s+(\d{2,4})|
   -h-> <A HREF="telnet://$1:$2/">$1 $2</A>
-
-# just the site name: <site>
-# But this gets mixed up with things line .tar.gz files!
-# |([^\w\-/\.:\@>])([a-zA-Z][\w+\-]+(\.[\w+\-]+)+\.[a-zA-Z]{2,})|
-#  -h-> $1<A HREF="http://$2">$2</A>/
 
 # just internet numbers with port:
 |([^\w\-/\.:\@])(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+(\d{1,4})|
@@ -118,10 +113,6 @@
 # just internet numbers:
 |([^\w\-/\.:\@])(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})|
   -h-> $1<A HREF="telnet://$2">$2</A>
-
-
-# (see "relative path") as used by Tom Fine
-# /\(see \"([^\"]+)\"\)/  -> $1.html
 
 # RFCs
 /RFC ?(\d+)/ -i-> http://www.cis.ohio-state.edu/rfc/rfc$1.txt
@@ -138,23 +129,6 @@
 # Don't mistake variable names for underlines, and
 # take account of possible trailing punctuation
 /([ \t\n])_([a-z][a-z0-9 -]*[a-z])_([ \t\n\.;:,\!\?])/ -hi-> $1<U>$2</U>$3
-
-# Mark *emphasized stuff* as <EM>emphasized stuff</EM>
-/\*((\w|["'])[^*]*)\*/ -h-> <EM>$1</EM>
-
-# We also need a special case for *x*
-/\B\*([a-z])\*\B/ -hi-> <EM>$1</EM>
-
-# Mark #bolded stuff# as <STRONG>bolded stuff</STRONG>
-# /\B#([a-z][a-z -]*[a-z])#\B/ -hi-> <STRONG>$1</STRONG>
-
-# Use this one instead if you want it to match more aggressively.
-# similar to the aggressive *emph* but also excluding things like #1
-/#([^0-9#][^#]*[^# \t\n])#/ -h-> <STRONG>$1</STRONG>
-
-# We also need a special case for #x#
-/\B#([a-z])#\B/ -hi-> <STRONG>$1</STRONG>
-
 
 # Seth and his amazing conversion program    :-)
 

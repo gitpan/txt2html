@@ -12,13 +12,14 @@ txt2html --help
 txt2html --manpage
 
 txt2html [ --append_file I<filename> ] [ --append_head I<filename> ]
-    [ --body_deco I<string> ] [ --bullets I<string> ]
-    [ --bullets_ordered I<string> ] [ --caps_tag I<tag> ]
+    [ --body_deco I<string> ] [ --bold_delimiter I<string> ]
+    [ --bullets I<string> ] [ --bullets_ordered I<string> ] [ --caps_tag I<tag> ]
     { --custom_heading_regexp I<regexp> } [ --debug ] [ --demoronize ]
     [ --default_link_dict I<filename> ] [ --dict_debug I<n> ]
     [ --doctype I<doctype> ] [ --eight_bit_clean ] [ --escape_HTML_chars ]
     [ --explicit_headings ] [ --extract ] [ --hrule_min I<n> ]
     [ --indent_width I<n> ] [ --indent_par_break ] { --infile I<filename> }
+    [ --italic_delimiter I<string> ]
     { --links_dictionaries I<filename> } [ --link_only ] [ --mailmode ]
     [ --make_anchors ] [ --make_tables ] [ --min_caps_length I<n> ]
     [ --outfile I<filename> ] [ --par_indent I<n> ]
@@ -94,6 +95,13 @@ but instead, have:
 Body decoration string: a string to be added to the BODY tag so that
 one can set attributes to the BODY (such as class, style, bgcolor etc)
 For example, "class='withimage'".
+
+=item --bold_delimiter I<string>
+
+This defines what character (or string) is taken to be the delimiter of
+text which is to be interpreted as bold (that is, to be given a STRONG
+tag).  If this is empty, then no bolding of text will be done.
+(default: #)
 
 =item --bullets I<string>
 
@@ -232,6 +240,13 @@ one file, just add another --infile I<file> to the list of arguments.
 Or else just add the filename without the option, after all the options.
 (default:-)
 
+=item --italic_delimiter I<string>
+
+This defines what character (or string) is taken to be the delimiter of
+text which is to be interpreted as italic (that is, to be given a EM
+tag).  If this is empty, no italicising of text will be done.
+(default: *)
+
 =item --links_dictionaries I<filename> | --link I<filename> | -l I<filename>
 
 File to use as a link-dictionary.  There can be more than one of these.
@@ -368,7 +383,7 @@ output.
 =item --system_link_dict I<filename>
 
 The name of the default "system" link dictionary.
-(default: "/usr/share/txt2html/txt2html.dict")
+(default: "/usr/local/share/txt2html/txt2html.dict")
 
 =item --tab_width I<n> | --tabwidth I<n> | -tw I<n>
 
@@ -737,7 +752,7 @@ modify it under the same terms as Perl itself.
 # Globals
 #
 use vars qw($VERSION);
-$VERSION = '2.24';
+$VERSION = '2.25';
 
 #################################################################
 # Includes
@@ -790,6 +805,7 @@ sub process_args ($) {
 	'append_file|append_body|ab=s',
 	'append_head|ah=s',
 	'body_deco=s',
+	'bold_delimiter=s',
 	'bullets=s',
 	'bullets_ordered=s',
 	'caps_tag|capstag|ct=s',
@@ -806,6 +822,7 @@ sub process_args ($) {
 	'indent_width|iw=n',
 	'indent_par_break|ipb!',
 	'infile=s@',
+	'italic_delimiter=s',
 	'links_dictionaries|link|l=s@',
 	'link_only|linkonly|LO!',
 	'lower_case_tags|lc_tags|LC!',

@@ -25,7 +25,7 @@ See "perldoc ExtUtils::MakeMaker" for more information on
 installation options.
 
 If your modules are somewhere other than the usual place, then it may
-be necessary to edit the first line to add
+be necessary to edit the first line of txt2html to add
 	-I /where/you/want/the/files
 
 Or edit the environment variable PERLLIB or PERL5LIB to add that directory.

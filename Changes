@@ -1,6 +1,17 @@
 Revision history for txt2html
 =============================
 
+2.25 Sun 23rd May 2004
+	- the default location for the system links dictionary (txt2html.dict) is
+now "/usr/local/share/txt2html/txt2html.dict". (It uses SITEPREFIX not PREFIX now)
+	- added --bold_delimiter and --italic_delimiter options; now the bold and
+italic matching is done separately, not as part of the links-dictionary stuff.
+This means it's much easier to change or turn off if you don't want it.
+	- links-dictionary matching is now done on segments without structural tags in them
+so matching for things like '^<P>' should be replaced with just '^'. I don't think
+this will break anything, and will prevent certain kinds of illegal substitutions.
+	- tidied up some of the links in the links dictionary
+
 2.24 Sun 16th May 2004
 	- bug fixes for preformatting: fixed up loss of trailing PRE, and
 now preformats and lists no longer have a trailing blank line

@@ -137,6 +137,7 @@ the next available header level is associated with it and applied to
 the line.  Any later matches of that regexp will use the same header level.
 Therefore, if you want to match numbered header lines, you could use
 something like this:
+
     -H '^ *\d+\. \w+' -H '^ *\d+\.\d+\. \w+' -H '^ *\d+\.\d+\.\d+\. \w+'
 
 Then lines like
@@ -752,7 +753,7 @@ modify it under the same terms as Perl itself.
 # Globals
 #
 use vars qw($VERSION);
-$VERSION = '2.25';
+$VERSION = '2.30';
 
 #################################################################
 # Includes

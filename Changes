@@ -1,6 +1,19 @@
 Revision history for txt2html
 =============================
 
+2.30 Fri 27th August 2004
+	- changed build system over to Module::Build to eliminate problems
+with different versions of ExtUtils::MakeMaker and the installation of
+the system links dictionary, as well as hoping to make the installation
+more portable.
+	- changed build so that the system links dictionary (in defaults
+and documentation) is automatically set to where the system links
+dictionary is going to be installed (yay!)
+	- improved the INSTALL document (thanks to Mark Schmidt)
+	- improved the bold and italic processing (now it's not messed up
+by short lines putting a <BR> in)
+	- bug fix for paragraphs with "0" (thanks to Andrew Williams)
+
 2.25 Sun 23rd May 2004
 	- the default location for the system links dictionary (txt2html.dict) is
 now "/usr/local/share/txt2html/txt2html.dict". (It uses SITEPREFIX not PREFIX now)

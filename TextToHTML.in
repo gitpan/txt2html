@@ -1,4 +1,3 @@
-#! /usr/bin/perl
 #------------------------------------------------------------------------
 
 =head1 NAME
@@ -56,8 +55,8 @@ The second usage allows one to pass arguments in from the command line, by
 calling perl and executing the module, and calling run_txt2html which
 creates an object for you and parses the command line.
 
-Either way, the arguments are the same.  See L<OPTIONS> for the
-arguments; see L<METHODS> for the methods of the HTML::TextToHTML object.
+Either way, the arguments are the same.  See L</OPTIONS> for the
+arguments; see L</METHODS> for the methods of the HTML::TextToHTML object.
 
 The following are the exported functions of this module:
 
@@ -191,6 +190,7 @@ the next available header level is associated with it and applied to
 the line.  Any later matches of that regexp will use the same header level.
 Therefore, if you want to match numbered header lines, you could use
 something like this:
+
     -H '^ *\d+\. \w+' -H '^ *\d+\.\d+\. \w+' -H '^ *\d+\.\d+\.\d+\. \w+'
 
 Then lines like
@@ -388,7 +388,7 @@ conversion is done.  (default: true)
     make_tables=>1
 
 Should we try to build tables?  If true, spots tables and marks them up
-appropriately.  See L<Input File Format> for information on how tables
+appropriately.  See L</Input File Format> for information on how tables
 should be formatted.
 
 This overrides the detection of lists; if something looks like a table,
@@ -640,7 +640,7 @@ BEGIN {
   run_txt2html
 );
 $PROG = 'HTML::TextToHTML';
-$VERSION = '2.25';
+$VERSION = '2.30';
 
 #------------------------------------------------------------------------
 use constant TEXT_TO_HTML => "TEXT_TO_HTML";
@@ -766,7 +766,7 @@ to be a reference to an array of arguments.  If more than one argument
 is given, it is assumed to be a hash of arguments.  These arguments will
 be used in invocations of other methods.
 
-See L<OPTIONS> for the possible values of the arguments.
+See L</OPTIONS> for the possible values of the arguments.
 
 =cut
 
@@ -797,7 +797,7 @@ sub new {
 Updates the current arguments/options of the HTML::TextToHTML object.
 Takes either a hash, or a reference to an array of arguments, which will
 be used in invocations of other methods.
-See L<OPTIONS> for the possible values of the arguments.
+See L</OPTIONS> for the possible values of the arguments.
 
 =cut
 
@@ -961,7 +961,7 @@ Convert a string to a HTML fragment.  This assumes that this string is
 at the least, a single paragraph, but it can contain more than that.
 This returns the processed string.  If you want to pass arguments to
 alter the behaviour of this conversion, you need to do that earlier,
-either when you create the object, or with the L<args> method.
+either when you create the object, or with the L</args> method.
 
     $newstring = $conv->process_chunk($mystring,
 			    close_tags=>0);
@@ -1031,11 +1031,11 @@ $newstring = $conv->process_para($mystring);
 Convert a string to a HTML fragment.  This assumes that this string is
 at the most a single paragraph, with no blank lines in it.  If you don't
 know whether your string will contain blank lines or not, use the
-L<process_chunk> method instead.
+L</process_chunk> method instead.
 
 This returns the processed string.  If you want to pass arguments to
 alter the behaviour of this conversion, you need to do that earlier,
-either when you create the object, or with the L<args> method.
+either when you create the object, or with the L</args> method.
 
     $newstring = $conv->process_para($mystring,
 			    close_tags=>0);
@@ -1103,7 +1103,7 @@ sub process_para ($$;%) {
 	    }
 	}
 
-	if ($para) {
+	if (defined $para && $para ne "") {
 	    #
 	    # Now we split the paragraph into lines
 	    #
@@ -1436,12 +1436,14 @@ sub process_para ($$;%) {
     # apply links and bold/italic formatting
     if (!is_blank($para))
     {
-	# split the paragraph into tags and non-tags
+	# split the paragraph into significant tags and non-tags
 	# and only apply the links to the non-tag units
-	my @units = split(/(<\/*[APTLHB][^>]*>)/i, $para);
+	my @units = split(/(<\/?[APTLHOUD][^>]*>)/i, $para);
 	for (my $i=0; $i < @units; $i++)
 	{
-	    if ($units[$i] !~ /^</)
+	    # skip the tags and anchor tags
+	    if ($units[$i] !~ /^<\/?[a-zA-Z0-9]+>\s*$/s
+		&& $units[$i] !~ /^<[apt].*>$/i)
 	    {
 		if ($self->{make_links}
 		    && @{$self->{__links_table_order}})
@@ -1513,7 +1515,7 @@ sub process_para ($$;%) {
 
 Convert a text file to HTML.  Takes a hash of arguments, or a reference
 to an array of arguments to customize the conversion; (this includes
-saying what file to convert!) See L<OPTIONS> for the possible values of
+saying what file to convert!) See L</OPTIONS> for the possible values of
 the arguments.  Arguments which have already been set with B<new> or
 B<args> will remain as they are, unless they are overridden.
 
@@ -3820,12 +3822,12 @@ sub do_delim {
     }
     elsif ($delim eq '^')
     {
-	${$line_ref} =~ s/\^((\w|["'])[^^]*)\^/<${out_tag}>$1<\/${out_tag}>/gs;
+	${$line_ref} =~ s/\^((\w|["'<>])[^^]*)\^/<${out_tag}>$1<\/${out_tag}>/gs;
 	${$line_ref} =~ s/\B\^([a-zA-Z])\^\B/<${out_tag}>$1<\/${out_tag}>/gs;
     }
     elsif (length($delim) eq 1) # one-character, general
     {
-	${$line_ref} =~ s/(?<![${delim}])[${delim}]((\w|["'])[^${delim}]*)[${delim}]/<${out_tag}>$1<\/${out_tag}>/gs;
+	${$line_ref} =~ s/(?<![${delim}])[${delim}]((\w|["'<>])[^${delim}]*)[${delim}]/<${out_tag}>$1<\/${out_tag}>/gs;
 	${$line_ref} =~ s/\B[${delim}]([a-zA-Z])[${delim}]\B/<${out_tag}>$1<\/${out_tag}>/gs;
     }
     else
@@ -4662,7 +4664,7 @@ Original txt2html script copyright (C) 2000 Seth Golub <seth AT aigeek.com>
 
 =head1 SEE ALSO
 
-L<perl>.
+perl
 L<txt2html>.
 Data::Dumper
 

@@ -1,9 +1,13 @@
 Developer Notes
 ===============
 
+Note that TextToHTML.pm is generated from TextToHTML.in, so don't waste
+time editing the .pm file. Likewise, edit the txt2html.in file if you
+want to change the script.
+
 When incrementing the VERSION, do it in two places:
-- TextToHTML.pm
-- txt2html
+- TextToHTML.in
+- txt2html.in
 This is because the version of the whole package is taken from the module,
 and it would be very confusing if the script version was different,
 considering they're distributed in the same bundle.
@@ -15,19 +19,26 @@ that have a META tag) so that the version there matches the new current
 version.
 
 All new options need to be added in five places:
-- TextToHTML.pm init_our_args(), to initialize the default
-- TextToHTML.pm args() in the parse-the-array-ref part, unless
+- TextToHTML.in init_our_args(), to initialize the default
+- TextToHTML.in args() in the parse-the-array-ref part, unless
   it is a simple option-with-a-value.  If it is a boolean option,
   it also needs to be added in its "no" form.
-- TextToHTML.pm OPTIONS documentation
-- txt2html Getopt call, including its type and possible shortnames
-- txt2html OPTIONS documentation
+- TextToHTML.in OPTIONS documentation
+- txt2html.in Getopt call, including its type and possible shortnames
+- txt2html.in OPTIONS documentation
 
-If you want to change the location or name of the default system link
-dictionary, it needs to be changed in four places:
-- Makefile.PL
-- TextToHTML.pm init_our_args()
-- TextToHTML.pm OPTIONS documentation
+If you want to change the location of the default system link
+dictionary, it needs to be changed in the MyBuilder.pm file, as
+that is where the location is calculated, and where the UpdatePath.PL
+file gets it from in order to change it in the .in files.
+(Note that this is only for changing the default location; the location
+obeys the install_base option of Build.PL when that's called.)
+
+If you want to change the *name* of the default system link dictionary,
+it needs to be changed in:
+- MyBuilder.pm
+- TextToHTML.in init_our_args()
+- TextToHTML.in OPTIONS documentation
 - txt2html OPTIONS documentation
 
 Release Notes
@@ -35,11 +46,11 @@ Release Notes
 
 Before releasing, don't forget to run
 
-	make
-	make test
-	make dist
+	./Build
+	./Build test
+	./Build dist
 
-(and usually "make install" as well)
+(and usually "Build install" as well)
 
 This bundle is released in three different external places:
 - CPAN
@@ -62,8 +73,8 @@ You will need to ftp upload the .tar.gz file to upload.sourceforge.net
 
 One also needs to update the web-page.  Cd to txt2html_web/htdocs on
 your home machine, and edit index.html to update the version number.
-Then do "make del_cpfiles".  Then edit the Makefile to update the
-version number.  Then do
+Then do
+	make del_cpfiles
 	make cpfiles
 	make
 	cvs commit

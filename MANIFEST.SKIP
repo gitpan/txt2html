@@ -13,11 +13,14 @@
 ^blib/
 ^MakeMaker-\d
 pm_to_blib
+# Module::Build files
+^_build/
 
 # temp, old, backup files
 ~$
 \.old$
 \.bak$
+\.tmp$
 \.#
 \.swp$
 ^#.*#$

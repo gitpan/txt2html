@@ -617,8 +617,8 @@ use 5.005_03;
 use strict;
 
 require Exporter;
-use vars qw($VERSION $PROG @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 
+our @ISA;
 BEGIN {
     @ISA = qw(Exporter);
     require Exporter;
@@ -627,26 +627,10 @@ BEGIN {
 
 # Items to export into callers namespace by default. Note: do not export
 # names by default without a very good reason. Use EXPORT_OK instead.
-# Do not simply export all your public functions/methods/constants.
 
-# This allows declaration	use HTML::TextToHTML ':all';
-# If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
-# will save memory.
-%EXPORT_TAGS = (
-    'all' => [
-        qw(
-
-        )
-    ]
-);
-
-@EXPORT_OK = (@{$EXPORT_TAGS{'all'}});
-
-@EXPORT = qw(
-  run_txt2html
-);
-$PROG = 'HTML::TextToHTML';
-$VERSION = '2.37';
+our @EXPORT = qw(run_txt2html);
+our $PROG = 'HTML::TextToHTML';
+our $VERSION = '2.40';
 
 #------------------------------------------------------------------------
 use constant TEXT_TO_HTML => "TEXT_TO_HTML";
@@ -658,58 +642,50 @@ use constant TEXT_TO_HTML => "TEXT_TO_HTML";
 # These are just constants I use for making bit vectors to keep track
 # of what modes I'm in and what actions I've taken on the current and
 # previous lines.  
-use vars qw($NONE $LIST $HRULE $PAR $PRE $END $BREAK $HEADER
-  $MAILHEADER $MAILQUOTE $CAPS $LINK $PRE_EXPLICIT $TABLE
-  $IND_BREAK $LIST_START $LIST_ITEM);
 
-$NONE         = 0;
-$LIST         = 1;
-$HRULE        = 2;
-$PAR          = 4;
-$PRE          = 8;
-$END          = 16;
-$BREAK        = 32;
-$HEADER       = 64;
-$MAILHEADER   = 128;
-$MAILQUOTE    = 256;
-$CAPS         = 512;
-$LINK         = 1024;
-$PRE_EXPLICIT = 2048;
-$TABLE        = 4096;
-$IND_BREAK    = 8192;
-$LIST_START   = 16384;
-$LIST_ITEM    = 32768;
+our $NONE         = 0;
+our $LIST         = 1;
+our $HRULE        = 2;
+our $PAR          = 4;
+our $PRE          = 8;
+our $END          = 16;
+our $BREAK        = 32;
+our $HEADER       = 64;
+our $MAILHEADER   = 128;
+our $MAILQUOTE    = 256;
+our $CAPS         = 512;
+our $LINK         = 1024;
+our $PRE_EXPLICIT = 2048;
+our $TABLE        = 4096;
+our $IND_BREAK    = 8192;
+our $LIST_START   = 16384;
+our $LIST_ITEM    = 32768;
 
 # Constants for Link-processing
 # bit-vectors for what to do with a particular link-dictionary entry
-use vars qw($LINK_NOCASE $LINK_EVAL $LINK_HTML $LINK_ONCE $LINK_SECT_ONCE);
-$LINK_NOCASE    = 1;
-$LINK_EVAL      = 2;
-$LINK_HTML      = 4;
-$LINK_ONCE      = 8;
-$LINK_SECT_ONCE = 16;
+our $LINK_NOCASE    = 1;
+our $LINK_EVAL      = 2;
+our $LINK_HTML      = 4;
+our $LINK_ONCE      = 8;
+our $LINK_SECT_ONCE = 16;
 
 # Constants for Ordered Lists and Unordered Lists.  
 # And Definition Lists.
 # I use this in the list stack to keep track of what's what.
 
-use vars qw($OL $UL $DL);
-$OL = 1;
-$UL = 2;
-$DL = 3;
+our $OL = 1;
+our $UL = 2;
+our $DL = 3;
 
 # Constants for table types
-use vars qw($TAB_ALIGN $TAB_PGSQL $TAB_BORDER $TAB_DELIM);
-$TAB_ALIGN = 1;
-$TAB_PGSQL = 2;
-$TAB_BORDER = 3;
-$TAB_DELIM = 4;
+our $TAB_ALIGN = 1;
+our $TAB_PGSQL = 2;
+our $TAB_BORDER = 3;
+our $TAB_DELIM = 4;
 
 # Character entity names
-use vars qw(%char_entities %char_entities2);
-
-# characters to replace *before* processing a line
-%char_entities = (
+# characters to replace with entities
+our %char_entities = (
     "\241", "&iexcl;",  "\242", "&cent;",   "\243", "&pound;",
     "\244", "&curren;", "\245", "&yen;",    "\246", "&brvbar;",
     "\247", "&sect;",   "\250", "&uml;",    "\251", "&copy;",
@@ -741,17 +717,13 @@ use vars qw(%char_entities %char_entities2);
     "\366", "&ouml;",   "\367", "&divide;", "\370", "&oslash;",
     "\371", "&ugrave;", "\372", "&uacute;", "\373", "&ucirc;",
     "\374", "&uuml;",   "\375", "&yacute;", "\376", "&thorn;",
-    "\377", "&yuml;",
+    "\377", "&yuml;", "\267", "&middot;",
 );
 
-# characters to replace *after* processing a line
-%char_entities2 = ("\267", "&middot;",);
-
 # alignments for tables
-use vars qw(@alignments @lc_alignments @xhtml_alignments);
-@alignments = ('', '', ' ALIGN="RIGHT"', ' ALIGN="CENTER"');
-@lc_alignments = ('', '', ' align="right"', ' align="center"');
-@xhtml_alignments = ('', '', ' style="text-align: right;"', ' style="text-align: center;"');
+our @alignments = ('', '', ' ALIGN="RIGHT"', ' ALIGN="CENTER"');
+our @lc_alignments = ('', '', ' align="right"', ' align="center"');
+our @xhtml_alignments = ('', '', ' style="text-align: right;"', ' style="text-align: center;"');
 
 #---------------------------------------------------------------#
 # Object interface
@@ -1005,14 +977,11 @@ sub process_chunk ($$;%) {
     }
     else
     {
-	for ($ind = 0; $ind < @paras; $ind++)
+	my $ind = 0;
+	foreach my $para (@paras)
 	{
-	    my $para = $paras[$ind];
 	    # if the paragraph doesn't end with a newline, add one
-	    if ($para !~ /\n$/)
-	    {
-		$para .= "\n";
-	    }
+	    $para .= "\n" if ($para !~ /\n$/);
 	    if ($ind == @paras - 1) # last one
 	    {
 		$ret_str .= $self->process_para($para,
@@ -1025,6 +994,7 @@ sub process_chunk ($$;%) {
 			close_tags=>0,
 			is_fragment=>0);
 	    }
+	    $ind++;
 	}
     }
     $ret_str;
@@ -1081,14 +1051,17 @@ sub process_para ($$;%) {
 
     # convert Microsoft character codes into sensible characters
     if ($self->{demoronize}) {
-	$para = demoronize_char($para);
+	demoronize_char($para);
     }
 
     # if we are not just linking, we are discerning structure
     if (!$self->{link_only}) {
 
 	# Chop trailing whitespace and DOS CRs
-	$para =~ s/[ \011]*\015$//g;
+	$para =~ s/[ \011]*\015$//;
+	# Chop leading whitespace and DOS CRs
+	$para =~ s/^[ \011]*\015//;
+	$para =~ s/\r//g; # remove any stray carriage returns
 
 	my @done_lines = (); # lines which have been processed
 
@@ -1113,29 +1086,34 @@ sub process_para ($$;%) {
 	    #
 	    # Now we split the paragraph into lines
 	    #
-	    $para =~ s/\r//g; # remove any stray carriage returns
 	    my $para_len         = length($para);
 	    my @para_lines       = split (/^/, $para);
 	    my @para_line_len    = ();
 	    my @para_line_indent = ();
 	    my @para_line_action = ();
-	    my $line;
-	    for (my $i = 0 ; $i < @para_lines ; $i++) {
-		$line = $para_lines[$i];
-		my $ind;
-
-		$line = $self->untabify($line);    # Change all tabs to spaces
-		    push @para_line_len, length($line);
-		if ($i > 0) {
-		    $ind = count_indent($line, $para_line_indent[$i - 1]);
-		    push @para_line_indent, $ind;
+	    my $i = 0;
+	    foreach my $line (@para_lines) {
+		# Change all tabs to spaces
+		while ($line =~ /\011/) {
+		    my $tw = $self->{tab_width};
+		    $line =~ s/\011/" " x ($tw - (length($`) % $tw))/e;
 		}
-		else {
-		    $ind = count_indent($line, 0);
-		    push @para_line_indent, $ind;
+		push @para_line_len, length($line);
+		if ($line =~ /^\s*$/)
+		{
+		    # if the line is blank, use the previous indent
+		    # if there is one
+		    push @para_line_indent,
+		    	($i == 0 ? 0 : $para_line_indent[$i-1]);
+		}
+		else
+		{
+		    # count the number of leading spaces
+		    my ($ws) = $line =~ /^( *)[^ ]/;
+		    push @para_line_indent, length($ws);
 		}
 		push @para_line_action, $NONE;
-		$para_lines[$i] = $line;
+	    	$i++;
 	    }
 
 	    # There are two more structures which carry over from one
@@ -1149,6 +1127,7 @@ sub process_para ($$;%) {
 	    # TABLE, MAILHEADER and non-pre text
 
 	    my $is_table = 0;
+	    my $table_type = 0;
 	    my $is_mailheader = 0;
 	    my $is_header = 0;
 	    my $is_custom_header = 0;
@@ -1158,9 +1137,9 @@ sub process_para ($$;%) {
 	    }
 	    if ($self->{make_tables}
 		&& @para_lines > 1) {
-		$is_table = $self->is_table(
-			rows_ref=>\@para_lines,
-			para_len=>$para_len);
+		$table_type = $self->get_table_type(rows_ref=>\@para_lines,
+						    para_len=>$para_len);
+		$is_table = ($table_type != 0);
 	    }
 	    if (!$self->{explicit_headings}
 		&& @para_lines > 1
@@ -1202,7 +1181,7 @@ sub process_para ($$;%) {
 		&& ($self->{preformat_trigger_lines} != 0))
 	    {
 		my $pre_end = '';
-		my $tag = $self->get_tag('PRE', tag_type=>'end');
+		my $tag = $self->close_tag('PRE');
 		$pre_end = "${tag}\n";
 		$self->{__mode} ^= ($PRE & $self->{__mode});
 		push @done_lines, $pre_end;
@@ -1251,8 +1230,9 @@ sub process_para ($$;%) {
 	    }
 
 	    # do the table stuff on the array of lines
-	    if ($self->{make_tables}) {
+	    if ($self->{make_tables} && $is_table) {
 		if ($self->tablestuff(
+			table_type=>$table_type,
 			rows_ref=>\@para_lines,
 			para_len=>$para_len))
 		{
@@ -1298,16 +1278,15 @@ sub process_para ($$;%) {
 		    $prev_line_len    = $para_line_len[$i - 1];
 		}
 		my $next_ref;
-		if ($i == @para_lines - 1) {
+		if ($i == $#para_lines) {
 		    $next_ref = undef;
 		}
 		else {
 		    $next_ref = \$para_lines[$i + 1];
 		}
 
-		if ($self->{escape_HTML_chars}) {
-		    $para_lines[$i] = escape($para_lines[$i]);
-		}
+		$para_lines[$i] = escape($para_lines[$i])
+		    if ($self->{escape_HTML_chars});
 
 		if ($self->{mailmode}
 			&& !($self->{__mode} & ($PRE_EXPLICIT)))
@@ -1337,7 +1316,7 @@ sub process_para ($$;%) {
 			    ind=>$i);
 		}
 		if (!($self->{__mode} & ($PRE))
-			&& !is_blank($para_lines[$i]))
+			&& ($para_lines[$i] !~ /^\s*$/))
 		{
 		    $self->liststuff(
 			    para_lines_ref=>\@para_lines,
@@ -1390,18 +1369,13 @@ sub process_para ($$;%) {
 		}
 
 		# put the "prev" line in front of the first line
-		if ($i == 0 && !is_blank($prev))
-		{
-		    $line = $para_lines[$i];
-		    $para_lines[$i] = $prev . $line;
-		}
+		$para_lines[$i] = $prev . $para_lines[$i]
+		    if ($i == 0 && ($prev !~ /^\s*$/));
 	    }
 
 	    # para action is the action of the last line of the para
 	    $para_action = $para_line_action[$#para_line_action];
-	    if (!defined $para_action) {
-		$para_action = $NONE;
-	    }
+	    $para_action = $NONE if (!defined $para_action);
 
 	    # push them on the done lines
 	    push @done_lines, @para_lines;
@@ -1409,7 +1383,7 @@ sub process_para ($$;%) {
 
 	}
 	# now put the para back together as one string
-	$para = join ("", @done_lines);
+	$para = join ('', @done_lines);
 
 	# if this is a paragraph, and we are in XHTML mode,
 	# close an open paragraph.
@@ -1441,40 +1415,10 @@ sub process_para ($$;%) {
     }
 
     # apply links and bold/italic formatting
-    if (!is_blank($para))
+    if ($para !~ /^\s*$/)
     {
-	# split the paragraph into significant tags and non-tags
-	# and only apply the links to the non-tag units
-	my @units = split(/(<\/?[APTLHOUD][^>]*>)/i, $para);
-	for (my $i=0; $i < @units; $i++)
-	{
-	    # skip the tags and anchor tags
-	    if ($units[$i] !~ /^<\/?[a-zA-Z0-9]+>\s*$/s
-		&& $units[$i] !~ /^<[apt].*>$/i)
-	    {
-		if ($self->{make_links}
-		    && @{$self->{__links_table_order}})
-		{
-		    $self->make_dictionary_links(line_ref=>\$units[$i],
-			    line_action_ref=>\$para_action);
-		}
-		if ($self->{bold_delimiter})
-		{
-		    $self->do_delim(line_ref=>\$units[$i],
-			    line_action_ref=>\$para_action,
-			    delim=>$self->{bold_delimiter},
-			    tag=>'STRONG');
-		}
-		if ($self->{italic_delimiter})
-		{
-		    $self->do_delim(line_ref=>\$units[$i],
-			    line_action_ref=>\$para_action,
-			    delim=>$self->{italic_delimiter},
-			    tag=>'EM');
-		}
-	    }
-	}
-	$para = join('', @units);
+	$self->apply_links(para_ref=>\$para,
+	    para_action_ref=>\$para_action);
     }
 
     # close any open lists if required to
@@ -1505,14 +1449,13 @@ sub process_para ($$;%) {
         foreach $_ (@chars) {
             $_ = $char_entities{$_} if defined($char_entities{$_});
         }
-        $para = join ("", @chars);
+        $para = join ('', @chars);
     }
-
 
     $self->{__prev_para_action} = $para_action;
 
     return $para;
-}
+} # process_para
 
 =head2 txt2html
 
@@ -1572,7 +1515,7 @@ sub txt2html ($;$) {
                 if ($count == 0) {
                     $self->do_file_start($outhandle, $para);
                 }
-		$self->clear_section_links();
+		$self->{__done_with_sect_link} = [];
                 $para = $self->process_chunk($para, 
 		    close_tags=>0);
                 print $outhandle $para, "\n";
@@ -1597,7 +1540,7 @@ sub txt2html ($;$) {
     # end open preformats
     if ($self->{__mode} & $PRE)
     {
-	my $tag = $self->get_tag('PRE', tag_type=>'end');
+	my $tag = $self->close_tag('PRE');
 	print $outhandle $tag;
     }
 
@@ -1639,8 +1582,8 @@ sub txt2html ($;$) {
 
     # print the closing tags (if we have printed stuff at all)
     if ($print_count && !$self->{extract}) {
-        print $outhandle $self->get_tag('BODY', tag_type=>'end'), "\n";
-        print $outhandle $self->get_tag('HTML', tag_type=>'end'), "\n";
+        print $outhandle $self->close_tag('BODY'), "\n";
+        print $outhandle $self->close_tag('HTML'), "\n";
     }
     if ($not_to_stdout) {
         close($outhandle);
@@ -1723,17 +1666,12 @@ sub init_our_data ($) {
 
     # accumulation variables
     $self->{__file} = "";    # Current file being processed
-    my %heading_styles = ();
-    $self->{__heading_styles}     = \%heading_styles;
+    $self->{__heading_styles}     = {};
     $self->{__num_heading_styles} = 0;
-    my %links_table = ();
-    $self->{__links_table} = \%links_table;
-    my @links_table_order = ();
-    $self->{__links_table_order} = \@links_table_order;
-    my @search_patterns = ();
-    $self->{__search_patterns} = \@search_patterns;
-    my @repl_code = ();
-    $self->{__repl_code}        = \@repl_code;
+    $self->{__links_table} = {};
+    $self->{__links_table_order} = [];
+    $self->{__search_patterns} = [];
+    $self->{__repl_code}        = [];
     $self->{__prev_para_action} = 0;
     $self->{__non_header_anchor} = 0;
     $self->{__mode}              = 0;
@@ -1826,15 +1764,8 @@ sub deal_with_options ($) {
         $self->{__heading_styles}     = \%heading_styles;
         $self->{__num_heading_styles} = $num_heading_styles;
     }
-    if ($self->{xhtml}) # XHTML implies lower case
-    {
-	$self->{'lower_case_tags'} = 1;
-    }
-}
-
-sub is_blank ($) {
-
-    return $_[0] =~ /^\s*$/;
+    # XHTML implies lower case
+    $self->{'lower_case_tags'} = 1 if ($self->{xhtml});
 }
 
 sub escape ($) {
@@ -1925,7 +1856,8 @@ sub get_tag ($$;%) {
 	{
 	    $tag_prefix = $self->close_tag('P');
 	}
-	elsif ($open_tag eq 'P' and $in_tag =~ /(HR|UL|OL|DL|PRE|TABLE|^H)/)
+	elsif ($open_tag eq 'P'
+	    and $in_tag =~ /^(HR|UL|OL|DL|PRE|TABLE|H)/)
 	{
 	    $tag_prefix = $self->close_tag('P');
 	}
@@ -1935,7 +1867,7 @@ sub get_tag ($$;%) {
 	    # close a LI before the next LI
 	    $tag_prefix = $self->close_tag('LI');
 	}
-	elsif ($open_tag eq 'LI' and $in_tag =~ /(UL|OL)/
+	elsif ($open_tag eq 'LI' and $in_tag =~ /^(UL|OL)$/
 	    and $args{tag_type} eq 'end')
 	{
 	    # close the LI before the list closes
@@ -1953,7 +1885,7 @@ sub get_tag ($$;%) {
 	    # close a DD before the next DT
 	    $tag_prefix = $self->close_tag('DD');
 	}
-	elsif ($open_tag eq 'DD' and $in_tag =~ /DL/
+	elsif ($open_tag eq 'DD' and $in_tag eq 'DL'
 	    and $args{tag_type} eq 'end')
 	{
 	    # close the DD before the list closes
@@ -1970,11 +1902,11 @@ sub get_tag ($$;%) {
     {
 	if ($self->{lower_case_tags})
 	{
-	    $out_tag =~ s/($in_tag)/\L$1/;
+	    $out_tag =~ tr/A-Z/a-z/;
 	}
 	else # upper case
 	{
-	    $out_tag =~ s/($in_tag)/\U$1/;
+	    $out_tag =~ tr/a-z/A-Z/;
 	}
 	if ($args{tag_type} eq 'empty')
 	{
@@ -1993,7 +1925,7 @@ sub get_tag ($$;%) {
 	    $out_tag = "<${out_tag}${inside_tag}>";
 	}
     }
-    $out_tag = $tag_prefix . $out_tag;
+    $out_tag = $tag_prefix . $out_tag if $tag_prefix;
     if ($self->{dict_debug} & 8)
     {
 	print STDERR "open_tag = '${open_tag}', in_tag = '${in_tag}', tag_type = ", $args{tag_type}, ", inside_tag = '${inside_tag}', out_tag = '$out_tag'\n";
@@ -2007,26 +1939,23 @@ sub close_tag ($$) {
     my $self	    = shift;
     my $in_tag	    = shift;
 
-    my $open_tag = @{$self->{__tags}}[$#{$self->{__tags}}];
-    if (!$in_tag)
+    my $open_tag = pop @{$self->{__tags}};
+    $in_tag ||= $open_tag;
+    # put the open tag back on the stack if the in-tag is not the same
+    if (defined $open_tag && $open_tag ne $in_tag)
     {
-	$in_tag = $open_tag;
+	push @{$self->{__tags}}, $open_tag;
     }
     my $out_tag = $in_tag;
     if ($self->{lower_case_tags})
     {
-	$out_tag =~ s/($in_tag)/\L$1/;
+	$out_tag =~ tr/A-Z/a-z/;
     }
     else # upper case
     {
-	$out_tag =~ s/($in_tag)/\U$1/;
+	$out_tag =~ tr/a-z/A-Z/;
     }
     $out_tag = "<\/${out_tag}>";
-    if (defined $open_tag
-	&& $open_tag eq $in_tag)
-    {
-	pop @{$self->{__tags}};
-    }
     if ($self->{dict_debug} & 8)
     {
 	print STDERR "close_tag: open_tag = '${open_tag}', in_tag = '${in_tag}', out_tag = '$out_tag'\n";
@@ -2084,8 +2013,8 @@ sub shortline ($%) {
     # (sorry)
 
     my $tag = $self->get_tag('BR', tag_type=>'empty');
-    if (!is_blank(${$line_ref})
-        && !is_blank(${$prev_ref})
+    if (${$line_ref} !~ /^\s*$/
+        && ${$prev_ref} !~ /^\s*$/
         && ($prev_line_len < $self->{short_line_length})
         && !(${$line_action_ref} & ($END | $HEADER | $HRULE | $LIST | $IND_BREAK| $PAR))
         && !(${$prev_action_ref} & ($HEADER | $HRULE | $BREAK | $IND_BREAK)))
@@ -2137,7 +2066,8 @@ sub mailheader ($%) {
 	chomp ${rows}[0];
 	$tag = $self->get_tag('P', inside_tag=>" class='mail_header'");
 	my $tag2 = $self->get_tag('BR', tag_type=>'empty');
-	$rows[0] = "<!-- New Message -->\n$tag" . $rows[0] . "${tag2}\n";
+	$rows[0] = join('', "<!-- New Message -->\n",
+		$tag, $rows[0], $tag2, "\n");
 	# now put breaks on the rest of the paragraph
 	# apart from the last line
 	for (my $rn=1; $rn < @rows; $rn++)
@@ -2177,7 +2107,7 @@ sub mailquote ($%) {
     if (((${$line_ref} =~ /^\w*&gt/)    # Handle "FF> Werewolves."
         || (${$line_ref} =~ /^[\|:]/))    # Handle "[|:] There wolves."
         && defined($next_ref)
-	&& !is_blank(${$next_ref})
+	&& (${$next_ref} !~ /^\s*$/)
       )
     {
 	$tag = $self->get_tag('BR', tag_type=>'empty');
@@ -2220,17 +2150,17 @@ sub paragraph ($%) {
     my $line_no		= $args{ind};
 
     my $tag = '';
-    if (!is_blank(${$line_ref})
+    if (${$line_ref} !~ /^\s*$/
         && !subtract_modes(${$line_action_ref},
             $END | $MAILQUOTE | $CAPS | $BREAK)
-        && (is_blank(${$prev_ref})
+        && (${$prev_ref} =~ /^\s*$/
             || (${$line_action_ref} & $END)
             || ($line_indent > $prev_indent + $self->{par_indent}))
 	&& !($is_fragment && $line_no == 0)
 	)
     {
 	if ($self->{indent_par_break}
-	    && !is_blank(${$prev_ref})
+	    && ${$prev_ref} !~ /^\s*$/
 	    && !(${$line_action_ref} & $END)
 	    && ($line_indent > $prev_indent + $self->{par_indent}))
 	{
@@ -2259,7 +2189,7 @@ sub paragraph ($%) {
     # detect also a continuing indentation at the same level
     elsif ($self->{indent_par_break}
         && !($self->{__mode} & ($PRE | $TABLE | $LIST))
-	&& !is_blank(${$prev_ref})
+	&& ${$prev_ref} !~ /^\s*$/
 	&& !(${$line_action_ref} & $END)
 	&& (${$prev_action_ref} & ($IND_BREAK | $PAR))
         && !subtract_modes(${$line_action_ref},
@@ -2275,18 +2205,6 @@ sub paragraph ($%) {
 	${$prev_action_ref} |= $BREAK;
 	${$line_action_ref} |= $IND_BREAK;
     }
-}
-
-# If the line is blank, return the second argument.  Otherwise,
-# return the number of spaces before any nonspaces on the line.
-sub count_indent ($$) {
-    my ($line, $prev_length) = @_;
-
-    if (is_blank($line)) {
-        return $prev_length;
-    }
-    my ($ws) = $line =~ /^( *)[^ ]/;
-    return length($ws);
 }
 
 sub listprefix ($$) {
@@ -2373,17 +2291,17 @@ sub startlist ($%) {
             return 0;
         }
 	$tag = $self->get_tag('OL');
-        ${$prev_ref} .= $self->{__list_nice_indent} . "${tag}\n";
+        ${$prev_ref} .= join('', $self->{__list_nice_indent}, $tag, "\n");
         $self->{__list}->[$self->{__listnum}] = $OL;
     }
     elsif ($term) {
 	$tag = $self->get_tag('DL');
-        ${$prev_ref} .= $self->{__list_nice_indent} . "${tag}\n";
+        ${$prev_ref} .= join('', $self->{__list_nice_indent}, $tag, "\n");
         $self->{__list}->[$self->{__listnum}] = $DL;
     }
     else {
 	$tag = $self->get_tag('UL');
-        ${$prev_ref} .= $self->{__list_nice_indent} . "${tag}\n";
+        ${$prev_ref} .= join('', $self->{__list_nice_indent}, $tag, "\n");
         $self->{__list}->[$self->{__listnum}] = $UL;
     }
 
@@ -2415,17 +2333,17 @@ sub endlist ($%) {
           " " x ($self->{__listnum} - 1) x $self->{indent_width};
         if ($self->{__list}->[$self->{__listnum} - 1] == $UL) {
 	    $tag = $self->get_tag('UL', tag_type=>'end');
-            ${$prev_ref} .= $self->{__list_nice_indent} . "${tag}\n";
+            ${$prev_ref} .= join('', $self->{__list_nice_indent}, $tag, "\n");
 	    pop @{$self->{__list_indent}};
         }
         elsif ($self->{__list}->[$self->{__listnum} - 1] == $OL) {
 	    $tag = $self->get_tag('OL', tag_type=>'end');
-            ${$prev_ref} .= $self->{__list_nice_indent} . "${tag}\n";
+            ${$prev_ref} .= join('', $self->{__list_nice_indent}, $tag, "\n");
 	    pop @{$self->{__list_indent}};
         }
         elsif ($self->{__list}->[$self->{__listnum} - 1] == $DL) {
 	    $tag = $self->get_tag('DL', tag_type=>'end');
-            ${$prev_ref} .= $self->{__list_nice_indent} . "${tag}\n";
+            ${$prev_ref} .= join('', $self->{__list_nice_indent}, $tag, "\n");
 	    pop @{$self->{__list_indent}};
         }
         else {
@@ -2507,7 +2425,7 @@ sub liststuff ($%) {
 
     if (!$prefix) {
 	# if the previous line is not blank
-	if ($ind > 0 && !is_blank($para_lines_ref->[$ind - 1]))
+	if ($ind > 0 && $para_lines_ref->[$ind - 1] !~ /^\s*$/)
 	{
 	    # inside a list item
 	    return;
@@ -2584,7 +2502,7 @@ sub liststuff ($%) {
     elsif (!$self->{__listnum} || ($i != $self->{__listnum})) {
         if (($para_line_indent_ref->[$ind] > 0)
 	    || $ind == 0
-            || ($ind > 0 && is_blank($para_lines_ref->[$ind - 1]))
+            || ($ind > 0 && ($para_lines_ref->[$ind - 1] =~ /^\s*$/))
             || ($ind > 0
 		&& $para_action_ref->[$ind - 1] & ($BREAK | $HEADER | $CAPS))
 	    )
@@ -2614,19 +2532,6 @@ sub liststuff ($%) {
       if ($self->{__mode} & $LIST);
     $para_line_indent_ref->[$ind] = length($total_prefix) if $islist;
 } # liststuff
-
-# check if the given paragraph-array is a table
-sub is_table ($%) {
-    my $self     = shift;
-    my %args = (
-	rows_ref=>undef,
-	para_len=>0,
-	@_
-    );
-    my $table_type = $self->get_table_type(%args);
-
-    return ($table_type != 0);
-}
 
 # figure out the table type of this table, if any
 sub get_table_type ($%) {
@@ -2834,7 +2739,7 @@ sub is_delim_table ($%) {
     }
 
     my @rows = @{$rows_ref};
-    if ($rows[0] !~ /\|/ && $rows[0] =~ /^\s*\w+/) # possible caption
+    if ($rows[0] !~ /[^\w\s]/ && $rows[0] =~ /^\s*\w+/) # possible caption
     {
 	shift @rows;
     }
@@ -2874,7 +2779,7 @@ sub is_delim_table ($%) {
 	{
 	    return 0;
 	}
-	if ($row !~ /[${delim}]$/)
+	if ($row !~ /[${delim}]\s*$/)
 	{
 	    return 0;
 	}
@@ -2891,11 +2796,12 @@ sub is_delim_table ($%) {
 sub tablestuff ($%) {
     my $self     = shift;
     my %args = (
+	table_type=>0,
 	rows_ref=>undef,
 	para_len=>0,
 	@_
     );
-    my $table_type = $self->get_table_type(%args);
+    my $table_type = $args{table_type};
     if ($table_type eq $TAB_ALIGN) {
 	return $self->make_aligned_table(%args);
     }
@@ -3012,8 +2918,8 @@ sub make_aligned_table ($%) {
 	{
 	    $tag = $self->get_tag('TABLE');
 	}
-        $rows[0] = "${tag}\n" . $rows[0];
-	$tag = $self->get_tag('TABLE', tag_type=>'end');
+        $rows[0] = join("\n", $tag, $rows[0]);
+	$tag = $self->close_tag('TABLE', tag_type=>'end');
         $rows[$#rows] .= "\n${tag}";
         @{$rows_ref} = @rows;
         return 1;
@@ -3054,6 +2960,7 @@ sub make_pgsql_table ($%) {
     # now start making the table
     my @tab_lines = ();
     my $tag;
+    my $tag2;
     if ($self->{xhtml})
     {
 	$tag = $self->get_tag('TABLE', inside_tag=>' border="1" summary=""');
@@ -3067,10 +2974,9 @@ sub make_pgsql_table ($%) {
 	$caption =~ s/^\s+//;
 	$caption =~ s/\s+$//;
 	$tag = $self->get_tag('CAPTION');
-	$caption = $tag . $caption;
-	$tag = $self->get_tag('CAPTION', tag_type=>'end');
-	$caption .= $tag;
-	push @tab_lines, "$caption\n";
+	$tag2 = $self->close_tag('CAPTION');
+	$caption = join('', $tag, $caption, $tag2, "\n");
+	push @tab_lines, $caption;
     }
     # table header
     my $thead = '';
@@ -3083,14 +2989,12 @@ sub make_pgsql_table ($%) {
 	$col =~ s/^\s+//;
 	$col =~ s/\s+$//;
 	$tag = $self->get_tag('TH');
-	$thead .= $tag;
-	$thead .= $col;
-	$tag = $self->get_tag('TH', tag_type=>'end');
-	$thead .= $tag;
+	$tag2 = $self->close_tag('TH');
+	$thead .= join('', $tag, $col, $tag2);
     }
-    $tag = $self->get_tag('TR', tag_type=>'end');
+    $tag = $self->close_tag('TR');
     $thead .= $tag;
-    $tag = $self->get_tag('THEAD', tag_type=>'end');
+    $tag = $self->close_tag('THEAD');
     $thead .= $tag;
     push @tab_lines, "${thead}\n";
     $tag = $self->get_tag('TBODY');
@@ -3115,18 +3019,16 @@ sub make_pgsql_table ($%) {
 		$cell = '&nbsp;';
 	    }
 	    $tag = $self->get_tag('TD');
-	    $this_row .= $tag;
-	    $this_row .= $cell;
-	    $tag = $self->get_tag('TD', tag_type=>'end');
-	    $this_row .= $tag;
+	    $tag2 = $self->close_tag('TD');
+	    $this_row .= join('', $tag, $cell, $tag2);
 	}
-	$tag = $self->get_tag('TR', tag_type=>'end');
+	$tag = $self->close_tag('TR');
 	$this_row .= $tag;
 	push @tab_lines, "${this_row}\n";
     }
 
     # end the table
-    $tag = $self->get_tag('TBODY', tag_type=>'end');
+    $tag = $self->close_tag('TBODY');
     push @tab_lines, "$tag\n";
     $tag = $self->get_tag('TABLE', tag_type=>'end');
     push @tab_lines, "$tag\n";
@@ -3195,7 +3097,7 @@ sub make_border_table ($%) {
 	$caption =~ s/\s+$//;
 	$tag = $self->get_tag('CAPTION');
 	$caption = $tag . $caption;
-	$tag = $self->get_tag('CAPTION', tag_type=>'end');
+	$tag = $self->close_tag('CAPTION');
 	$caption .= $tag;
 	push @tab_lines, "$caption\n";
     }
@@ -3212,12 +3114,12 @@ sub make_border_table ($%) {
 	$tag = $self->get_tag('TH');
 	$thead .= $tag;
 	$thead .= $col;
-	$tag = $self->get_tag('TH', tag_type=>'end');
+	$tag = $self->close_tag('TH');
 	$thead .= $tag;
     }
-    $tag = $self->get_tag('TR', tag_type=>'end');
+    $tag = $self->close_tag('TR');
     $thead .= $tag;
-    $tag = $self->get_tag('THEAD', tag_type=>'end');
+    $tag = $self->close_tag('THEAD');
     $thead .= $tag;
     push @tab_lines, "${thead}\n";
     $tag = $self->get_tag('TBODY');
@@ -3247,16 +3149,16 @@ sub make_border_table ($%) {
 	    $tag = $self->get_tag('TD');
 	    $this_row .= $tag;
 	    $this_row .= $cell;
-	    $tag = $self->get_tag('TD', tag_type=>'end');
+	    $tag = $self->close_tag('TD');
 	    $this_row .= $tag;
 	}
-	$tag = $self->get_tag('TR', tag_type=>'end');
+	$tag = $self->close_tag('TR');
 	$this_row .= $tag;
 	push @tab_lines, "${this_row}\n";
     }
 
     # end the table
-    $tag = $self->get_tag('TBODY', tag_type=>'end');
+    $tag = $self->close_tag('TBODY');
     push @tab_lines, "$tag\n";
     $tag = $self->get_tag('TABLE', tag_type=>'end');
     push @tab_lines, "$tag\n";
@@ -3313,7 +3215,7 @@ sub make_delim_table ($%) {
 	$caption =~ s/\s+$//;
 	$tag = $self->get_tag('CAPTION');
 	$caption = $tag . $caption;
-	$tag = $self->get_tag('CAPTION', tag_type=>'end');
+	$tag = $self->close_tag('CAPTION');
 	$caption .= $tag;
 	push @tab_lines, "$caption\n";
     }
@@ -3342,10 +3244,10 @@ sub make_delim_table ($%) {
 	    $tag = $self->get_tag('TD');
 	    $this_row .= $tag;
 	    $this_row .= $cell;
-	    $tag = $self->get_tag('TD', tag_type=>'end');
+	    $tag = $self->close_tag('TD');
 	    $this_row .= $tag;
 	}
-	$tag = $self->get_tag('TR', tag_type=>'end');
+	$tag = $self->close_tag('TR');
 	$this_row .= $tag;
 	push @tab_lines, "${this_row}\n";
     }
@@ -3389,7 +3291,7 @@ sub split_end_explicit_preformat ($%) {
 	    if ($self->{escape_HTML_chars}) {
 		$pre_str = escape($pre_str);
 	    }
-	    $tag = $self->get_tag('PRE', tag_type=>'end');
+	    $tag = $self->close_tag('PRE');
 	    $pre_str .= "${tag}\n";
             $self->{__mode} ^= (($PRE | $PRE_EXPLICIT) & $self->{__mode});
         }
@@ -3425,12 +3327,12 @@ sub endpreformat ($%) {
         if ($para_lines_ref->[$ind] =~ /$pe_mark/io) {
 	    if ($ind == 0)
 	    {
-		$tag = $self->get_tag('PRE', tag_type=>'end');
+		$tag = $self->close_tag('PRE');
 		$para_lines_ref->[$ind] = "${tag}\n";
 	    }
 	    else
 	    {
-		$tag = $self->get_tag('PRE', tag_type=>'end');
+		$tag = $self->close_tag('PRE');
 		$para_lines_ref->[$ind - 1] .= "${tag}\n";
 		$para_lines_ref->[$ind] = "";
 	    }
@@ -3450,12 +3352,12 @@ sub endpreformat ($%) {
     {
 	if ($ind == 0)
 	{
-	    $tag = $self->get_tag('PRE', tag_type=>'end');
+	    $tag = $self->close_tag('PRE');
 	    ${$prev_ref} = "${tag}\n";
 	}
 	else
 	{
-	    $tag = $self->get_tag('PRE', tag_type=>'end');
+	    $tag = $self->close_tag('PRE');
 	    $para_lines_ref->[$ind - 1] .= "${tag}\n";
 	}
         $self->{__mode} ^= ($PRE & $self->{__mode});
@@ -3615,7 +3517,7 @@ sub is_heading ($%) {
     my $line_ref        = $args{line_ref};
     my $next_ref        = $args{next_ref};
 
-    if (!is_blank(${$line_ref})
+    if (${$line_ref} !~ /^\s*$/
 	&& !$self->is_ul_list_line(line=>${$line_ref})
 	&& defined $next_ref
 	&& ${$next_ref} =~ /^\s*[-=*.~+]+\s*$/)
@@ -3687,12 +3589,8 @@ sub is_custom_heading ($%) {
 	);
     my $line  = $args{line};
 
-    my ($i, $level);
-    for ($i = 0 ; $i < @{$self->{custom_heading_regexp}} ; $i++) {
-        my $reg = ${$self->{custom_heading_regexp}}[$i];
-	if ($line =~ /$reg/) {
-	    return 1;
-	}
+    foreach my $reg (@{$self->{custom_heading_regexp}}) {
+	return 1 if ($line =~ /$reg/);
     }
     return 0;
 } # is_custom_heading
@@ -3705,9 +3603,9 @@ sub custom_heading ($%) {
 	);
     my $line_ref  = $args{line_ref};
 
-    my ($i, $level);
-    for ($i = 0 ; $i < @{$self->{custom_heading_regexp}} ; $i++) {
-        my $reg = ${$self->{custom_heading_regexp}}[$i];
+    my $level;
+    my $i = 0;
+    foreach my $reg (@{$self->{custom_heading_regexp}}) {
         if (${$line_ref} =~ /$reg/) {
             if ($self->{explicit_headings}) {
                 $level = $i + 1;
@@ -3722,6 +3620,7 @@ sub custom_heading ($%) {
             $self->anchor_heading($level, $line_ref);
             last;
         }
+    	$i++;
     }
 } # custom_heading
 
@@ -3744,17 +3643,6 @@ sub unhyphenate_para ($$) {
 s/(\s*)([^\W\d_]*)\-\n(\s*)([^\W\d_]+[\)\}\]\.,:;\'\"\>]*\s*)/$1$2$4\n$3/gs;
 } # unhyphenate_para
 
-sub untabify ($$) {
-    my $self = shift;
-    my $line = shift;
-
-    while ($line =~ /\011/) {
-	my $tw = $self->{tab_width};
-        $line =~ s/\011/" " x ($tw - (length($`) % $tw))/e;
-    }
-    $line;
-} # untabify
-
 sub tagline ($$$) {
     my $self     = shift;
     my $tag      = shift;
@@ -3762,7 +3650,7 @@ sub tagline ($$$) {
 
     chomp ${$line_ref};    # Drop newline
     my $tag1 = $self->get_tag($tag);
-    my $tag2 = $self->get_tag($tag, tag_type=>'end');
+    my $tag2 = $self->close_tag($tag);
     ${$line_ref} =~ s/^\s*(.*)$/${tag1}$1${tag2}\n/;
 } # tagline
 
@@ -3809,36 +3697,26 @@ sub do_delim {
     my $line_action_ref = $args{line_action_ref};
     my $delim = $args{delim};
     my $tag = $args{tag};
-
-    my $out_tag = $tag;
-    if ($self->{lower_case_tags})
-    {
-	$out_tag =~ s/($tag)/\L$1/;
-    }
-    else # upper case
-    {
-	$out_tag =~ s/($tag)/\U$1/;
-    }
     
     if ($delim eq '#') # special treatment of # for the #num case
     {
-	${$line_ref} =~ s/#([^0-9#][^#]*[^# \t\n])#/<${out_tag}>$1<\/${out_tag}>/gs;
-	${$line_ref} =~ s/\B#([a-zA-Z])#\B/<${out_tag}>$1<\/${out_tag}>/gs;
+	${$line_ref} =~ s/#([^0-9#](?![^#]*(?:<li>|<LI>|<P>|<p>))[^#]*[^# \t\n])#/<${tag}>$1<\/${tag}>/gs;
+	${$line_ref} =~ s/\B#([a-zA-Z])#\B/<${tag}>$1<\/${tag}>/gs;
     }
     elsif ($delim eq '^')
     {
-	${$line_ref} =~ s/\^((\w|["'<>])[^^]*)\^/<${out_tag}>$1<\/${out_tag}>/gs;
-	${$line_ref} =~ s/\B\^([a-zA-Z])\^\B/<${out_tag}>$1<\/${out_tag}>/gs;
+	${$line_ref} =~ s/\^((?![^^]*(?:<li>|<LI>|<p>|<P>))(\w|["'<>])[^^]*)\^/<${tag}>$1<\/${tag}>/gs;
+	${$line_ref} =~ s/\B\^([a-zA-Z])\^\B/<${tag}>$1<\/${tag}>/gs;
     }
     elsif (length($delim) eq 1) # one-character, general
     {
-	${$line_ref} =~ s/(?<![${delim}])[${delim}]((\w|["'<>])[^${delim}]*)[${delim}]/<${out_tag}>$1<\/${out_tag}>/gs;
-	${$line_ref} =~ s/\B[${delim}]([a-zA-Z])[${delim}]\B/<${out_tag}>$1<\/${out_tag}>/gs;
+	${$line_ref} =~ s/(?<![${delim}])[${delim}](?![^${delim}]*(?:<li>|<LI>|<p>|<P>))((\w|["'<>])[^${delim}]*)[${delim}]/<${tag}>$1<\/${tag}>/gs;
+	${$line_ref} =~ s/\B[${delim}]([a-zA-Z])[${delim}]\B/<${tag}>$1<\/${tag}>/gs;
     }
     else
     {
-	${$line_ref} =~ s/(?<!${delim})${delim}((\w|["'])(\w|[-\s\.;:,!?"'])*[^\s])${delim}/<${out_tag}>$1<\/${out_tag}>/gs;
-	${$line_ref} =~ s/${delim}]([a-zA-Z])${delim}/<${out_tag}>$1<\/${out_tag}>/gs;
+	${$line_ref} =~ s/(?<!${delim})${delim}((\w|["'])(\w|[-\s\.;:,!?"'])*[^\s])${delim}/<${tag}>$1<\/${tag}>/gs;
+	${$line_ref} =~ s/${delim}]([a-zA-Z])${delim}/<${tag}>$1<\/${tag}>/gs;
     }
 } # do_delim
 
@@ -3872,7 +3750,7 @@ sub glob2regexp {
         }
         $regexp .= $char;    # Normal character
     }
-    "\\b" . $regexp . "\\b";
+    join('', "\\b", $regexp, "\\b");
 } # glob2regexp
 
 sub add_regexp_to_links_table ($$$$) {
@@ -3918,8 +3796,8 @@ sub add_glob_to_links_table ($$$$) {
     $self->add_regexp_to_links_table(glob2regexp($key), $URL, $switches);
 } # add_glob_to_links_table
 
-# This is the only function you should need to change if you want to
-# use a different dictionary file format.
+# Parse the dictionary file.
+# (see also load_dictionary_links, for things that were stripped)
 sub parse_dict ($$$) {
     my $self = shift;
 
@@ -3927,9 +3805,6 @@ sub parse_dict ($$$) {
 
     print STDERR "Parsing dictionary file $dictfile\n"
       if ($self->{dict_debug} & 1);
-
-    $dict =~ s/^\#.*$//mg;           # Strip lines that start with '#'
-    $dict =~ s/^.*[^\\]:\s*$//mg;    # Strip lines that end with unescaped ':'
 
     if ($dict =~ /->\s*->/) {
         my $message = "Two consecutive '->'s found in $dictfile\n";
@@ -3990,26 +3865,22 @@ sub setup_dict_checking ($) {
     my $self = shift;
 
     # now create the replace funcs and precomile the regexes
-    my ($key, $URL, $switches, $options, $tag1, $tag2);
-    my ($pattern, $href, $i, $r_sw, $code, $code_ref);
-    for ($i = 1 ; $i < @{$self->{__links_table_order}} ; $i++) {
-        $pattern  = $self->{__links_table_order}->[$i];
-        $key      = $pattern;
-        $switches = $self->{__links_switch_table}->{$key};
+    my ($URL, $switches, $options, $tag1, $tag2);
+    my ($href, $r_sw);
+    my @subs;
+    my $i = 0;
+    foreach my $pattern (@{$self->{__links_table_order}}) {
+        $switches = $self->{__links_switch_table}->{$pattern};
 
-        $href = $self->{__links_table}->{$key};
+        $href = $self->{__links_table}->{$pattern};
 
         if (!($switches & $LINK_HTML))
 	{
 	    $href =~ s#/#\\/#g;
-	    if ($self->{lower_case_tags})
-	    {
-		$href = '<a href="' . $href . '">$&<\\/a>'
-	    }
-	    else
-	    {
-		$href = '<A HREF="' . $href . '">$&<\\/A>'
-	    }
+	    $href = ($self->{lower_case_tags}
+	    	? join('', '<a href="', $href, '">$&<\\/a>')
+	    	: join('', '<A HREF="', $href, '">$&<\\/A>')
+	    );
 	}
 	else
 	{
@@ -4036,10 +3907,16 @@ sub setup_dict_checking ($) {
         # as if it were perl code, because sometimes the $href
         # contains things which need to be evaluated, such as $& or $1,
         # not just those cases where we have a "e" switch.
-        $code =
-"\$self->{__repl_code}->[$i] = sub {\nmy \$al = shift;\n\$al =~ s/$pattern/$href/$r_sw;\nreturn \$al; }\n";
-        print STDERR "$code" if ($self->{dict_debug} & 2);
-        eval "$code";
+        my $code =<<EOT;
+\$self->{__repl_code}->[$i] =
+sub {
+my \$al = shift;
+\$al =~ s/$pattern/$href/$r_sw;
+return \$al;
+};
+EOT
+        print STDERR $code if ($self->{dict_debug} & 2);
+	push @subs, $code;
 
         # compile searching pattern
         if ($switches & $LINK_NOCASE)    # i
@@ -4049,7 +3926,11 @@ sub setup_dict_checking ($) {
         else {
             $self->{__search_patterns}->[$i] = qr/$pattern/s;
         }
+    	$i++;
     }
+    # now eval the replacements code string
+    my $codes = join('', @subs);
+    eval "$codes";
 } # setup_dict_checking
 
 sub in_link_context ($$$) {
@@ -4082,12 +3963,41 @@ sub in_link_context ($$$) {
     );    # one opened after last close
 } # in_link_context
 
-# clear the section-links flags
-sub clear_section_links ($) {
+# apply links and formatting to this paragraph
+sub apply_links ($%) {
     my $self            = shift;
+    my %args = (
+	para_ref=>undef,
+	para_action_ref=>undef,
+	@_
+	);
+    my $para_ref        = $args{para_ref};
+    my $para_action_ref = $args{para_action_ref};
 
-    $self->{__done_with_sect_link} = [];
-} # clear_section_links
+    if ($self->{make_links}
+	&& @{$self->{__links_table_order}})
+    {
+	$self->check_dictionary_links(line_ref=>$para_ref,
+	    line_action_ref=>$para_action_ref);
+    }
+    if ($self->{bold_delimiter})
+    {
+	my $tag = ($self->{lower_case_tags} ? 'strong' : 'STRONG');
+	$self->do_delim(line_ref=>$para_ref,
+			line_action_ref=>$para_action_ref,
+			delim=>$self->{bold_delimiter},
+			tag=>$tag);
+    }
+    if ($self->{italic_delimiter})
+    {
+	my $tag = ($self->{lower_case_tags} ? 'em' : 'EM');
+	$self->do_delim(line_ref=>$para_ref,
+			line_action_ref=>$para_action_ref,
+			delim=>$self->{italic_delimiter},
+			tag=>$tag);
+    }
+
+} # apply_links
 
 # Check (and alter if need be) the bits in this line matching
 # the patterns in the link dictionary.
@@ -4101,40 +4011,28 @@ sub check_dictionary_links ($%) {
     my $line_ref        = $args{line_ref};
     my $line_action_ref = $args{line_action_ref};
 
-    my ($i, $pattern, $switches, $options, $repl_func);
-    my $key;
-    my $s_sw;
-    my $r_sw;
-    my $line_link = 0;
-    if (defined ${$line_action_ref}) {
-	($line_link) = (${$line_action_ref} | $LINK);
-    }
-    else {
-	warn "check_dictionary_links: \\line_action_ref undefined!\n";
-    }
-    my ($before, $linkme, $line_with_links);
+    my ($switches, $options, $repl_func);
+    my ($linkme, $line_with_links);
 
     # for each pattern, check and alter the line
-    for ($i = 1 ; $i < @{$self->{__links_table_order}} ; $i++) {
-        $pattern  = $self->{__links_table_order}->[$i];
-        $key      = $pattern;
-        $switches = $self->{__links_switch_table}->{$key};
+    my $i = 0;
+    foreach my $pattern (@{$self->{__links_table_order}}) {
+        $switches = $self->{__links_switch_table}->{$pattern};
 
         # check the pattern
         if ($switches & $LINK_ONCE)    # Do link only once
         {
-            $line_with_links = "";
-            while (!$self->{__done_with_link}->[$i]
+            $line_with_links = '';
+            if (!$self->{__done_with_link}->[$i]
                 && ${$line_ref} =~ $self->{__search_patterns}->[$i])
             {
                 $self->{__done_with_link}->[$i] = 1;
-                $line_link = $LINK if (!$line_link);
-                $before    = $`;
+		$line_with_links .= $`;
                 $linkme    = $&;
 
-                ${$line_ref} =
-                  substr(${$line_ref}, length($before) + length($linkme));
-                if (!$self->in_link_context($linkme, $line_with_links . $before)) {
+		${$line_ref} = $';
+                if (!$self->in_link_context($linkme, $line_with_links))
+		{
                     print STDERR "Link rule $i matches $linkme\n"
                       if ($self->{dict_debug} & 4);
 
@@ -4143,24 +4041,23 @@ sub check_dictionary_links ($%) {
                     $repl_func = $self->{__repl_code}->[$i];
                     $linkme    = &$repl_func($linkme);
                 }
-                $line_with_links .= $before . $linkme;
+                $line_with_links .= $linkme;
             }
             ${$line_ref} = $line_with_links . ${$line_ref};
         }
         elsif ($switches & $LINK_SECT_ONCE)    # Do link only once per section
         {
-            $line_with_links = "";
-            while (!$self->{__done_with_sect_link}->[$i]
+            $line_with_links = '';
+            if (!$self->{__done_with_sect_link}->[$i]
                 && ${$line_ref} =~ $self->{__search_patterns}->[$i])
             {
                 $self->{__done_with_sect_link}->[$i] = 1;
-                $line_link = $LINK if (!$line_link);
-                $before    = $`;
+		$line_with_links .= $`;
                 $linkme    = $&;
 
-                ${$line_ref} =
-                  substr(${$line_ref}, length($before) + length($linkme));
-                if (!$self->in_link_context($linkme, $line_with_links . $before)) {
+		${$line_ref} = $';
+                if (!$self->in_link_context($linkme, $line_with_links))
+		{
                     print STDERR "Link rule $i matches $linkme\n"
                       if ($self->{dict_debug} & 4);
 
@@ -4169,20 +4066,19 @@ sub check_dictionary_links ($%) {
                     $repl_func = $self->{__repl_code}->[$i];
                     $linkme    = &$repl_func($linkme);
                 }
-                $line_with_links .= $before . $linkme;
+                $line_with_links .= $linkme;
             }
             ${$line_ref} = $line_with_links . ${$line_ref};
         }
         else {
-            $line_with_links = "";
+            $line_with_links = '';
             while (${$line_ref} =~ $self->{__search_patterns}->[$i]) {
-                $line_link = $LINK if (!$line_link);
-                $before    = $`;
+		$line_with_links .= $`;
                 $linkme    = $&;
 
-                ${$line_ref} =
-                  substr(${$line_ref}, length($before) + length($linkme));
-                if (!$self->in_link_context($linkme, $line_with_links . $before)) {
+		${$line_ref} = $';
+                if (!$self->in_link_context($linkme, $line_with_links)) 
+		{
                     print STDERR "Link rule $i matches $linkme\n"
                       if ($self->{dict_debug} & 4);
 
@@ -4191,46 +4087,41 @@ sub check_dictionary_links ($%) {
                     $repl_func = $self->{__repl_code}->[$i];
                     $linkme    = &$repl_func($linkme);
                 }
-                $line_with_links .= $before . $linkme;
+                $line_with_links .= $linkme;
             }
             ${$line_ref} = $line_with_links . ${$line_ref};
         }
+    	$i++;
     }
-    ${$line_action_ref} |= $line_link;    # Cheaper only to do bitwise OR once.
+    ${$line_action_ref} |= $LINK;
 } # check_dictionary_links
 
 sub load_dictionary_links ($) {
     my $self = shift;
-    my ($dict, $contents);
-    @{$self->{__links_table_order}} = 0;
+
+    @{$self->{__links_table_order}} = ();
     %{$self->{__links_table}}       = ();
 
+    my $dict;
     foreach $dict (@{$self->{links_dictionaries}}) {
-        next unless $dict;
-	    open(DICT, "$dict") || die "Can't open Dictionary file $dict\n";
+	next unless $dict;
+	open(DICT, "$dict") || die "Can't open Dictionary file $dict\n";
 
-	    $contents = "";
-	    $contents .= $_ while (<DICT>);
-	    close(DICT);
-	    $self->parse_dict($dict, $contents);
+	my @lines = ();
+	while (<DICT>)
+	{
+	    # skip lines that start with '#'
+	    next if /^\#/;          
+	    # skip lines that end with unescaped ':'
+	    next if /^.*[^\\]:\s*$/;
+	    push @lines, $_;
+	}
+	close(DICT);
+	my $contents = join('', @lines);
+	$self->parse_dict($dict, $contents);
     }
     $self->setup_dict_checking();
 } # load_dictionary_links
-
-sub make_dictionary_links ($%) {
-    my $self            = shift;
-    my %args = (
-	line_ref=>undef,
-	line_action_ref=>undef,
-	@_
-	);
-    my $line_ref        = $args{line_ref};
-    my $line_action_ref = $args{line_action_ref};
-
-    $self->check_dictionary_links(line_ref=>$line_ref,
-	line_action_ref=>$line_action_ref);
-    warn $@ if $@;
-} # make_dictionary_links
 
 # do_file_start
 #    extra stuff needed for the beginning
@@ -4257,7 +4148,7 @@ sub do_file_start ($$$) {
 	    }
 	    else
 	    {
-		print $outhandle '<!DOCTYPE HTML PUBLIC "' . $self->{doctype} . "\">\n";
+		print $outhandle '<!DOCTYPE HTML PUBLIC "', $self->{doctype}, "\">\n";
 	    }
 	}
         print $outhandle $self->get_tag('HTML'), "\n";
@@ -4275,7 +4166,7 @@ sub do_file_start ($$$) {
             $self->{'title'} = "";
         }
         print $outhandle $self->get_tag('TITLE'), $self->{title},
-	    $self->get_tag('TITLE', tag_type=>'end'), "\n";
+	    $self->close_tag('TITLE'), "\n";
 
         if ($self->{append_head}) {
             open(APPEND, $self->{append_head})
@@ -4314,7 +4205,7 @@ sub do_file_start ($$$) {
 		"\n";
 	    }
 	}
-        print $outhandle $self->get_tag('HEAD', tag_type=>'end'), "\n";
+        print $outhandle $self->close_tag('HEAD'), "\n";
 	if ($self->{body_deco})
 	{
 	    print $outhandle $self->get_tag('BODY',

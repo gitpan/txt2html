@@ -758,7 +758,7 @@ modify it under the same terms as Perl itself.
 # Globals
 #
 use vars qw($VERSION);
-$VERSION = '2.37';
+$VERSION = '2.40';
 
 #################################################################
 # Includes

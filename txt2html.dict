@@ -89,8 +89,7 @@
   -h-> ftp <A HREF="ftp://$1/">$1</A>
 
 # host with "ftp" in the machine name
-|(^|[^\w\d\-/\.:!])(([a-zA-Z][\w+\-]*)?ftp[\w+\-]*\.[\w\.+\-]+\.[a-zA-Z]{2,})([^\w\d\-/\.:!]|$)|
-  -h-> $1ftp <A HREF="ftp://$2/">$2</A>$4
+|\b([a-zA-Z][\w])*ftp[\w]*(\.[\w+\-]+){2,}| -h-> ftp <A HREF="ftp://$&/">$&</A>
 
 # ftp.foo.net/blah/
 |ftp(\.[a-zA-Z0-9_\@:-]+)+/\S+| -> ftp://$&
@@ -99,8 +98,7 @@
 |www(\.[a-zA-Z0-9_\@:-]+)+/\S+| -> http://$&
 
 # host with "www" in the machine name
-|(^|[^\w\d\-/\.:!])(([a-zA-Z][\w+\-]*)?www[\w+\-]*\.[\w\.+\-]+\.[a-zA-Z]{2,})([^\w\d\-/\.:!\@]|$)|
-  -h-> $1<A HREF="http://$2/">$2</A>$4
+|\b([a-zA-Z][\w])*www[\w]*(\.[\w+\-]+){2,}| -> http://$&/
 
 # <site> <port>
 |([a-zA-Z][\w+\-]+\.[\w+\-]+\.[a-zA-Z]{2,})\s+(\d{2,4})|

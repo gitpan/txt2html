@@ -1,7 +1,10 @@
 Revision history for txt2html
 =============================
 
-2.32 Wed 5th January 2005
+2.34 Thu 6th January 2005
+	- fixed another bug with demoronize code (gah!)
+
+2.33 Wed 5th January 2005
 	- darn, left out some files!
 
 2.32 Wed 5th January 2005

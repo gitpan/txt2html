@@ -647,7 +647,7 @@ BEGIN {
   run_txt2html
 );
 $PROG = 'HTML::TextToHTML';
-$VERSION = '2.33';
+$VERSION = '2.34';
 
 #------------------------------------------------------------------------
 use constant TEXT_TO_HTML => "TEXT_TO_HTML";
@@ -1884,8 +1884,6 @@ sub demoronize_code($) {
     #   possible.
 
     $s =~ s-\x83-<em>f</em>-g;
-
-    $s =~ s-\x89- °/°°-g;
 
     $s =~ s-\x98-<sup>~</sup>-g;
     $s =~ s-\x99-<sup>TM</sup>-g;

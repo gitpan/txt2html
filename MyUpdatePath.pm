@@ -3,7 +3,7 @@ package # hide from PAUSE
 use Filter::Simple;
 use Module::Build;
 use strict;
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 our $filename;
 
@@ -19,7 +19,7 @@ BEGIN {
 FILTER {
     my $build = Module::Build->current;
     my $dict_dir = $build->install_destination('dict');
-    s#/usr/local/share/bibledaily/plans#${dict_dir}#;
+    s#/usr/local/share/txt2html#${dict_dir}#g;
     if ($filename) {
 	print OUT $_;
     }

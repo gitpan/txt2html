@@ -29,7 +29,8 @@ my $build = new Module::Build(
 $build->add_build_element('dict');
 # calculate dictionary path
 my $path = $build->install_destination('script');
-$path =~ s{bin/?$}{share/txt2html};
+$path =~ s#/$##;
+$path =~ s{(bin|script)}{share/txt2html};
 $build->install_path->{dict} = $path;
 
 $build->create_build_script;

@@ -3,6 +3,7 @@ Changes
 DEVNOTES
 INSTALL
 lib/HTML/TextToHTML.PL
+lib/HTML/TextToHTML.pm
 LICENSE
 MANIFEST
 MANIFEST.SKIP
@@ -11,6 +12,7 @@ MyUpdatePath.pm
 old_version.txt
 README
 scripts/txt2html.PL
+scripts/txt2html
 t/00_dist.test
 t/10para.t
 t/20tfiles.t

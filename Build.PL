@@ -1,5 +1,18 @@
 use Module::Build;
-my $build = new Module::Build(
+use File::Spec;
+my $build_class = ($Module::Build::VERSION > 0.27
+                   ? 'Module::Build'
+                   : Module::Build->subclass(
+		   class=>'MyBuilder',
+		   code => <<'EOF'));
+sub install_base_relative {
+   my ($self, $type) = @_;
+   return File::Spec->catdir('share', 'txt2html') if $type eq 'dict';
+   return $self->SUPER::install_base_relative($type);
+}
+EOF
+
+my $build = new $build_class(
     module_name	=> 'HTML::TextToHTML',
     dist_name		=> 'txt2html',
     dist_version_from	=> 'scripts/txt2html.PL',
@@ -7,6 +20,7 @@ my $build = new Module::Build(
 		'perl'	=> '5.6.0',
 		'Getopt::Long' => 0,
 		'Getopt::ArgvFile' => 0,
+		'File::Spec' => 0,
 		'File::Basename' => 0,
 		'Pod::Usage' => 0,
 		'Data::Dumper' => 0,

@@ -1,6 +1,10 @@
 Revision history for txt2html
 =============================
 
+2.37 Thu 10th February 2005
+	- another fix to installation
+	- fixed CPAN module problem
+
 2.36 Sun 23rd January 2005
 	- slight fix to installation
 

@@ -1,7 +1,7 @@
 package # hide from PAUSE
     MyUpdatePath;
 use Filter::Simple;
-use Module::Build;
+use MyBuilder;
 use strict;
 our $VERSION = '0.03';
 
@@ -17,7 +17,7 @@ BEGIN {
 }
 
 FILTER {
-    my $build = Module::Build->current;
+    my $build = MyBuilder->current;
     my $dict_dir = $build->install_destination('dict');
     s#/usr/local/share/txt2html#${dict_dir}#g;
     if ($filename) {

@@ -112,9 +112,11 @@ something like this:
     -H '^ *\d+\. \w+' -H '^ *\d+\.\d+\. \w+' -H '^ *\d+\.\d+\.\d+\. \w+'
 
 Then lines like
+
                 " 1. Examples "
-                " 1.1 Things"
-            and " 4.2.5 Cold Fusion"
+                " 1.1. Things"
+            and " 4.2.5. Cold Fusion"
+
 Would be marked as H1, H2, and H3 (assuming they were found in that
 order, and that no other header styles were encountered).
 If you prefer that the first one specified always be H1, the second
@@ -628,7 +630,7 @@ modify it under the same terms as Perl itself.
 # Globals
 #
 use vars qw($VERSION);
-$VERSION = '2.01';
+$VERSION = '2.02';
 
 #################################################################
 # Includes

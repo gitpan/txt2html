@@ -1,6 +1,12 @@
 Revision history for txt2html
 =============================
 
+2.02 Sun 13th July 2003
+	- fixed bug in documentation about custom headings
+	- moved tests into t/ directory
+	- added is_fragment option to process_para to enable it to
+process a fragment without assuming that it was a paragraph.
+
 2.01 Sun 1st June 2003
 	- fixed up a few documentation/reference things that I'd forgotten,
 changing names in sample.txt for example.

@@ -5,7 +5,7 @@ by Seth Golub for txt2html.
 
 I used the following options to convert this document:
 
-     --titlefirst --mailmode --make_tables
+     -titlefirst -mailmode -make_tables
      --custom_heading_regexp '^ *--[\w\s]+-- *$'
      --system_link_dict txt2html.dict
      --append_body sample.foot --infile sample.txt --outfile sample.html

@@ -5,7 +5,7 @@
 
 # change 'tests => 1' to 'tests => last_test_to_print';
 
-use Test::More tests => 11;
+use Test::More tests => 5;
 use HTML::TextToHTML;
 ok(1); # If we made it this far, we're ok.
 
@@ -73,84 +73,6 @@ sub compare {
 my $conv = new HTML::TextToHTML();
 ok( defined $conv, 'new() returned something' );
 ok( $conv->isa('HTML::TextToHTML'), "  and it's the right class" );
-
-$result = $conv->txt2html(
-system_link_dict=>"txt2html.dict",
-default_link_dict=>"",
-#links_dictionaries=>"section.dict",
-infile=>["sample.txt"],
-outfile=>"sample.html",
-append_file=>"sample.foot",
-titlefirst=>1, mailmode=>1,
-custom_heading_regexp=>['^ *--[\w\s]+-- *$'],
-make_tables=>1,
-#debug=>1,
-#dict_debug=>15,
-);
-ok($result, 'converted sample.txt');
-
-# compare the files
-$result = compare('good_sample.html', 'sample.html');
-ok($result, 'test file matches original example exactly');
-if ($result) {
-    unlink('sample.html');
-}
-
-# test the process_para method alone
-$test_str = "Matty had a little truck
-he drove it round and round
-and everywhere that Matty went
-the truck was *always* found.
-";
-
-$ok_str = "<P>Matty had a little truck<BR>
-he drove it round and round<BR>
-and everywhere that Matty went<BR>
-the truck was <EM>always</EM> found.
-";
-@args = ();
-push @args, "--infile", "CLEAR";
-push @args, "--outfile", "-";
-push @args, "--append_file", "";
-
-$out_str = $conv->process_para($test_str);
-ok($out_str, 'converted sample string');
-
-# compare the result
-is($out_str, $ok_str, 'compare converted string with OK string');
-
-# test the process_para method with an ordered list
-$test_str = "Here is my list:
-
-1. Spam
-2. Jam
-3. Ham
-4. Pickles
-";
-
-$ok_str = "<P>Here is my list:
-
-<OL>
-  <LI>Spam
-  <LI>Jam
-  <LI>Ham
-  <LI>Pickles
-</OL>
-";
-@args = ();
-push @args, "--infile", "CLEAR";
-push @args, "--outfile", "-";
-push @args, "--append_file", "";
-
-$out_str = $conv->process_para($test_str);
-ok($out_str, 'converted sample string with list');
-
-# compare the result
-is($out_str, $ok_str, 'compare converted list string with OK list string');
-
-# test the file with XHTML on
-$conv = undef;
-$conv = new HTML::TextToHTML();
 
 @args = ();
 #push @args, "--debug";

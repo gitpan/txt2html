@@ -14,7 +14,7 @@ txt2html --manpage
 txt2html [ --append_file I<filename> ] [ --append_head I<filename> ]
     [ --body_deco I<string> ] [ --bullets I<string> ]
     [ --bullets_ordered I<string> ] [ --caps_tag I<tag> ]
-    { --custom_heading_regexp I<regexp> } [ --debug ]
+    { --custom_heading_regexp I<regexp> } [ --debug ] [ --demoronize ]
     [ --default_link_dict I<filename> ] [ --dict_debug I<n> ]
     [ --doctype I<doctype> ] [ --eight_bit_clean ] [ --escape_HTML_chars ]
     [ --explicit_headings ] [ --extract ] [ --hrule_min I<n> ]
@@ -157,6 +157,12 @@ developer)
 The name of the default "user" link dictionary.
 (default: "$ENV{'HOME'}/.txt2html.dict")
 
+=item --demoronize
+
+Convert Microsoft-generated character codes that are non-ISO codes into
+something more reasonable.
+(default:true)
+
 =item --dict_debug I<n> | -db I<n>
 
 Debug mode for link dictionaries Bitwise-Or what you want to see:
@@ -243,7 +249,9 @@ probably want to use the --extract option also.
 
 =item --mailmode | -m
 
-Deal with mail headers & quoted text
+Deal with mail headers & quoted text.  The mail header paragraph is
+given the class 'mail_header', and mail-quoted text is given the class
+'quote_mail'.
 (default: false)
 
 =item --make_anchors | --anchors
@@ -410,9 +418,10 @@ This was the behavior of txt2html up to version 1.10.
 
 =item --use_preformat_marker | --preformat_marker | -pm
 
-Turn on preformatting when encountering
-"<PRE>" on a line by itself, and turn it
-off when there's a line containing only "</PRE>".
+Turn on preformatting when encountering "<PRE>" on a line by itself, and turn
+it off when there's a line containing only "</PRE>".
+When such preformatted text is detected, the PRE tag will be given the
+class 'quote_explicit'.
 (default: off)
 
 =item --xhtml
@@ -728,7 +737,7 @@ modify it under the same terms as Perl itself.
 # Globals
 #
 use vars qw($VERSION);
-$VERSION = '2.23';
+$VERSION = '2.24';
 
 #################################################################
 # Includes
@@ -786,6 +795,7 @@ sub process_args ($) {
 	'caps_tag|capstag|ct=s',
 	'custom_heading_regexp|heading|H=s@',
 	'default_link_dict|dict=s',
+	'demoronize',
 	'dict_debug|db=n',
 	'doctype|dt=s',
 	'eight_bit_clean|8!',

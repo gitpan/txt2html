@@ -2,7 +2,7 @@
 
 #########################
 
-use Test::More tests => 48;
+use Test::More tests => 50;
 use HTML::TextToHTML;
 
 #########################
@@ -396,6 +396,25 @@ $result = compare('tfiles/good_pre.html', 'pre.html');
 ok($result, 'test file matches original example exactly');
 if ($result) {
     unlink('pre.html');
+}
+
+$result = $conv->txt2html(
+system_link_dict=>"txt2html.dict",
+default_link_dict=>"",
+extract=>1,
+use_preformat_marker=>0,
+infile=>["tfiles/pre2.txt"],
+outfile=>"pre2.html",
+#debug=>1,
+#dict_debug=>15,
+);
+ok($result, 'converted pre2.txt');
+
+# compare the files
+$result = compare('tfiles/good_pre2.html', 'pre2.html');
+ok($result, 'test file matches original example exactly');
+if ($result) {
+    unlink('pre2.html');
 }
 
 #

@@ -2,7 +2,7 @@
 <HTML>
 <HEAD>
 <TITLE>txt2html/HTML::TextToHTML Sample Conversion</TITLE>
-<META NAME="generator" CONTENT="HTML::TextToHTML v2.23">
+<META NAME="generator" CONTENT="HTML::TextToHTML v2.24">
 </HEAD>
 <BODY>
 <P><A HREF="http://txt2html.sourceforge.net/">txt2html</A>/<A HREF="http://www.katspace.com/tools/text_to_html/">HTML::TextToHTML</A> Sample Conversion
@@ -17,7 +17,6 @@ by <A HREF="http://www.aigeek.com/">Seth Golub</A> for txt2html.
      --custom_heading_regexp '^ *--[\w\s]+-- *$'
      --system_link_dict txt2html.dict
      --append_body sample.foot --infile sample.txt --outfile sample.html
-
 </PRE>
 <P>This has either been done at the command line with:
 
@@ -33,12 +32,11 @@ by <A HREF="http://www.aigeek.com/">Seth Golub</A> for txt2html.
         use HTML::TextToHTML;
         my $conv = new HTML::TextToHTML();
         $conv-&gt;txt2html([<EM>options</EM>]);
-
 </PRE>
 <HR>
 
 <!-- New Message -->
-<P><A NAME="0">From</A> <A HREF="mailto:bozo@clown.wustl.edu">bozo@clown.wustl.edu</A><BR>
+<P class='mail_header'><A NAME="0">From</A> <A HREF="mailto:bozo@clown.wustl.edu">bozo@clown.wustl.edu</A><BR>
 Return-Path: &lt;<A HREF="mailto:bozo@clown.wustl.edu">bozo@clown.wustl.edu</A>&gt;<BR>
 Message-Id: &lt;<A HREF="mailto:9405102200.AA04736@clown.wustl.edu">9405102200.AA04736@clown.wustl.edu</A>&gt;<BR>
 Content-Length: 1070<BR>
@@ -119,47 +117,37 @@ documents look like.
   </OL>
   <LI>Doesn't screw up mail-ish things
   <LI>Spots preformated text
-
 </UL>
 <PRE>
                  It just needs to have enough whitespace in the line.
         Surrounding blank lines aren't necessary.  If it sees enough
         whitespace in a line, it preformats it.  How much is enough?
         Set it yourself at command line if you want.
-
 </PRE>
 <UL>
   <LI>You can append a file automatically to all converted files.  This
    is handy for adding signatures to your documents.
-
   <LI>Deals with paragraphs decently.
-
 <P>   Looks for short lines in the middle of paragraphs and keeps them
    short with the use of breaks (&lt;BR&gt;).  How short the lines need to
    be is configurable.
-
 <P>   Unhyphenates split words that are in the middle of paragraphs.  
    Let me know if trailing punctuation isn't handled "properly".  
    It should be.
-
 <P>   One can also have multi-paragraph list items, like this one.
-
   <LI>Puts anchors at all headers and, if you're using the mail header
    features, at the beginning of each mail message.  The anchor names
    for headings are based on guessed section numbers.  
   <UL>
     <LI>You can turn off this option too, if you don't like it.
-
   </UL>
   <LI>Groks Mosaic-style "formatted text" headers (like the one below)
-
   <LI>Can hyperlink things according to a dictionary file.
    The sample dictionary handles URLs like <A HREF="http://www.aigeek.com/">http://www.aigeek.com/</A> and
    &lt;<A HREF="http://www.katspace.com/">http://www.katspace.com/</A>&gt; and also shows how to do simpler
    things such as linking the word txt2html the first time it appeared.
   <LI>One can also use the link-dictionary to define custom tags, for
    example using the star character to indicate <EM>italics</EM>.
-
   <LI>Recognises and parses tables of different types:
   <UL>
     <LI>DELIM: A table determined by delimiters.
@@ -167,12 +155,10 @@ documents look like.
      a table by looking at the layout, the spacing of the cells.
     <LI>BORDER: has a nice border around the table
     <LI>PGSQL: the same format as Postgresql query results.
-
   </UL>
   <LI>Also with XHTML!  Turn on the --xhtml option and it will ensure that
    all paragraphs and list items have end-tags, all tags are in
    lower-case, and the doctype is for XHTML.
-
 </UL>
 <H4><A NAME="section_1_3_1_1">Example of short lines</A></H4>
 
@@ -221,7 +207,6 @@ multiple lines</EM>.
         Let it rain, let it rain, on me
         Let it rain, oh let it rain,
         Let it rain, on me
-
 </PRE>
 <H4><A NAME="section_1_3_1_4">Definition Lists</A></H4>
 
@@ -234,11 +219,9 @@ with a colon.
   <DT>Definition</DT>
 <DD>The definition part of a DL item is at least one paragraph following
 the term.
-
 <P>  If one has more than one paragraph in the definition, the first line of
 the next paragraph needs to be indented two spaces from where the term
 starts, otherwise we don't know that it belongs to the definition.
-
 </DL>
 <H4><A NAME="section_1_3_1_5">Examples of Tables</A></H4>
 
@@ -327,7 +310,6 @@ I would like to implement.
       does)
     <LI>display the correct OL properties with CSS so as to preserve
       that information.
-
   </OL>
 </OL>
 <HR>

@@ -215,6 +215,14 @@ The name of the default "user" link dictionary.
 (default: "$ENV{'HOME'}/.txt2html.dict" -- this is the same as for
 the txt2html script)
 
+=item demoronize
+
+    demoronize=>1
+
+Convert Microsoft-generated character codes that are non-ISO codes into
+something more reasonable.
+(default:true)
+
 =item dict_debug
 
     dict_debug=>I<n>
@@ -337,7 +345,9 @@ probably want to use the --extract option also.
 
     mailmode=>1
 
-Deal with mail headers & quoted text
+Deal with mail headers & quoted text.  The mail header paragraph is
+given the class 'mail_header', and mail-quoted text is given the class
+'quote_mail'.
 (default: false)
 
 =item make_anchors
@@ -551,9 +561,10 @@ This was the behavior of txt2html up to version 1.10.
 
     use_preformat_marker=>1
 
-Turn on preformatting when encountering
-"<PRE>" on a line by itself, and turn it
-off when there's a line containing only "</PRE>".
+Turn on preformatting when encountering "<PRE>" on a line by itself, and turn
+it off when there's a line containing only "</PRE>".
+When such preformatted text is detected, the PRE tag will be given the
+class 'quote_explicit'.
 (default: off)
 
 =item xhtml
@@ -611,7 +622,7 @@ BEGIN {
   run_txt2html
 );
 $PROG = 'HTML::TextToHTML';
-$VERSION = '2.23';
+$VERSION = '2.24';
 
 #------------------------------------------------------------------------
 use constant TEXT_TO_HTML => "TEXT_TO_HTML";
@@ -826,6 +837,7 @@ sub args {
 		    print STDERR "--", $arg;
 		}
 		if ($arg eq 'debug'
+		    || $arg eq 'demoronize'
 		    || $arg eq 'eight_bit_clean'
 		    || $arg eq 'escape_HTML_chars'
 		    || $arg eq 'explicit_headings'
@@ -849,6 +861,7 @@ sub args {
 			print STDERR "=true\n";
 		    }
 		} elsif ($arg eq 'nodebug'
+		    || $arg eq 'nodemoronize'
 		    || $arg eq 'noeight_bit_clean'
 		    || $arg eq 'noescape_HTML_chars'
 		    || $arg eq 'noexplicit_headings'
@@ -1042,6 +1055,11 @@ sub process_para ($$;%) {
         $self->{__mode} ^= $MAILHEADER;
     }
 
+    # convert Microsoft character codes into sensible characters
+    if ($self->{demoronize}) {
+	$para = demoronize_char($para);
+    }
+
     # if we are not just linking, we are discerning structure
     if (!$self->{link_only}) {
 
@@ -1166,6 +1184,16 @@ sub process_para ($$;%) {
 		$self->{__prev_para_action} |= $END;
 	    }
 
+	    # The PRE and PRE_EXPLICIT structure can carry over
+	    # from one paragraph to the next, but because we don't
+	    # want trailing newlines, such newlines would have been
+	    # gotten rid of in the previous call.  However, with
+	    # a preformatted text, we do want the blank lines in it
+	    # to be preserved, so let's add a blank line in here.
+	    if ($self->{__mode} & $PRE) {
+		push @done_lines, "\n";
+	    }
+
 	    # Now, we do certain things which are only found at the
 	    # start of a paragraph:
 	    # HEADER, custom-header, TABLE and MAILHEADER
@@ -1226,7 +1254,6 @@ sub process_para ($$;%) {
 	    # because they would have eaten the lines
 	    #
 	    my $prev        = '';
-	    my $next        = '';
 	    my $prev_action = $self->{__prev_para_action};
 	    for (my $i = 0 ; $i < @para_lines ; $i++) {
 		my $prev_ref;
@@ -1247,7 +1274,7 @@ sub process_para ($$;%) {
 		}
 		my $next_ref;
 		if ($i == @para_lines - 1) {
-		    $next_ref = \$next;
+		    $next_ref = undef;
 		}
 		else {
 		    $next_ref = \$para_lines[$i + 1];
@@ -1343,11 +1370,6 @@ sub process_para ($$;%) {
 		    $line = $para_lines[$i];
 		    $para_lines[$i] = $prev . $line;
 		}
-		# put the "next" at the end of the last line
-		if ($i == @para_lines - 1 && !is_blank($next))
-		{
-		    $para_lines[$i] .= $next;
-		}
 	    }
 
 	    # para action is the action of the last line of the para
@@ -1385,7 +1407,12 @@ sub process_para ($$;%) {
         {
             $self->unhyphenate_para(\$para);
         }
-
+	# chop trailing newlines for continuing lists and PRE
+	if ($self->{__mode} & $LIST
+	    || $self->{__mode} & $PRE)
+	{
+	    $para =~ s/\n$//g;
+	}
     }
 
     if ($self->{make_links}
@@ -1413,6 +1440,10 @@ sub process_para ($$;%) {
 	}
     }
 
+    # convert remaining Microsoft character codes into sensible HTML
+    if ($self->{demoronize}) {
+	$para = demoronize_code($para);
+    }
     # All the matching and formatting is done.  Now we can 
     # replace non-ASCII characters with character entities.
     if (!$self->{eight_bit_clean}) {
@@ -1509,6 +1540,13 @@ sub txt2html ($;$) {
     }
     print $outhandle $self->{__prev};
 
+    # end open preformats
+    if ($self->{__mode} & $PRE)
+    {
+	my $tag = $self->get_tag('PRE', tag_type=>'end');
+	print $outhandle $tag;
+    }
+
     # close all open tags
     if ($self->{xhtml}
 	&& !$self->{extract}
@@ -1581,6 +1619,7 @@ sub init_our_data ($) {
     $self->{default_link_dict} = "$ENV{HOME}/.txt2html.dict";
     $self->{dict_debug} = 0;
     $self->{doctype} = "-//W3C//DTD HTML 3.2 Final//EN";
+    $self->{demoronize} = 1;
     $self->{eight_bit_clean} = 0;
     $self->{escape_HTML_chars} = 1;
     $self->{explicit_headings} = 0;
@@ -1747,6 +1786,56 @@ sub escape ($) {
     $text =~ s/>/&gt;/g;
     $text =~ s/</&lt;/g;
     return $text;
+}
+
+#     Added by Alan Jackson, alan at ajackson dot org, and based
+#     on the demoronize script by John Walker, http://www.fourmilab.ch/
+# Convert Microsoft character entities into characters.
+sub demoronize_char($) {
+    my $s = shift;
+    #   Map strategically incompatible non-ISO characters in the
+    #   range 0x82 -- 0x9F into plausible substitutes where
+    #   possible.
+
+    $s =~ s/\x82/,/g;
+    $s =~ s/\x84/,,/g;
+    $s =~ s/\x85/.../g;
+
+    $s =~ s/\x88/^/g;
+    $s =~ s-\x89- °/°°-g;
+
+    $s =~ s/\x8B/</g;
+    $s =~ s/\x8C/Oe/g;
+
+    $s =~ s/\x91/`/g;
+    $s =~ s/\x92/'/g;
+    $s =~ s/\x93/"/g;
+    $s =~ s/\x94/"/g;
+    $s =~ s/\x95/*/g;
+    $s =~ s/\x96/-/g;
+    $s =~ s/\x97/--/g;
+
+    $s =~ s/\x9B/>/g;
+    $s =~ s/\x9C/oe/g;
+
+    return $s;
+}
+
+# convert Microsoft character entities into HTML code
+sub demoronize_code($) {
+    my $s = shift;
+    #   Map strategically incompatible non-ISO characters in the
+    #   range 0x82 -- 0x9F into plausible substitutes where
+    #   possible.
+
+    $s =~ s-\x83-<em>f</em>-g;
+
+    $s =~ s-\x89- °/°°-g;
+
+    $s =~ s-\x98-<sup>~</sup>-g;
+    $s =~ s-\x99-<sup>TM</sup>-g;
+
+    return $s;
 }
 
 # output the tag wanted (add the <> and the / if necessary)
@@ -1992,7 +2081,7 @@ sub mailheader ($%) {
 	}
 	$self->anchor_mail(\$rows[0]);
 	chomp ${rows}[0];
-	$tag = $self->get_tag('P');
+	$tag = $self->get_tag('P', inside_tag=>" class='mail_header'");
 	my $tag2 = $self->get_tag('BR', tag_type=>'empty');
 	$rows[0] = "<!-- New Message -->\n$tag" . $rows[0] . "${tag2}\n";
 	# now put breaks on the rest of the paragraph
@@ -2033,7 +2122,8 @@ sub mailquote ($%) {
     my $tag = '';
     if (((${$line_ref} =~ /^\w*&gt/)    # Handle "FF> Werewolves."
         || (${$line_ref} =~ /^[\|:]/))    # Handle "[|:] There wolves."
-        && !is_blank(${$next_ref})
+        && defined($next_ref)
+	&& !is_blank(${$next_ref})
       )
     {
 	$tag = $self->get_tag('BR', tag_type=>'empty');
@@ -3358,7 +3448,10 @@ sub preformat ($%) {
 	&& ($self->{preformat_trigger_lines} == 0
         || ($self->is_preformatted(${$line_ref})
             && ($self->{preformat_trigger_lines} == 1
-                || $self->is_preformatted(${$next_ref})))
+                || (defined $next_ref
+		    && $self->is_preformatted(${$next_ref})
+		)
+	    ))
 	)
        )
     {
@@ -3470,6 +3563,7 @@ sub is_heading ($%) {
 
     if (!is_blank(${$line_ref})
 	&& !$self->is_ul_list_line(line=>${$line_ref})
+	&& defined $next_ref
 	&& ${$next_ref} =~ /^\s*[=\-\*\.~\+]+\s*$/)
     {
 	my ($hoffset, $heading) = ${$line_ref} =~ /^(\s*)(.+)$/;

@@ -1,6 +1,7 @@
 TODO list for HTML::TextToHTML
 ==============================
 
+- add optional "enhanced" definition lists detection, which does Term: Defintion
 - add in an "obfustcate email addresses" facility
 - recognise and reproduce different Ordered List styles.
 - links-per-section

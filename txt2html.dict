@@ -135,14 +135,12 @@
 # /(_\^H.)+/ -he-> $tmp = $&;$tmp =~ s@_\^H@@g;"<U>$tmp</U>"
 
 # Mark _underlined stuff_ as <U>underlined stuff</U>
+# Don't mistake variable names for underlines, and
 # take account of possible trailing punctuation
 /([ \t\n])_([a-z][a-z0-9 -]*[a-z])_([ \t\n\.;:,\!\?])/ -hi-> $1<U>$2</U>$3
 
 # Mark *emphasized stuff* as <EM>emphasized stuff</EM>
-#/\B\*([a-z][a-z -]*[a-z])\*\B/ -hi-> <EM>$1</EM>
-
-# Use this one instead if you want it to match more aggressively.
-/\*((\w|["'])+(\w|\s|[-!?,:;._\"\'<>#%&=+\/\$]+)+)\*/ -hi-> <EM>$1</EM>
+/\*((\w|["'])[^*]*)\*/ -h-> <EM>$1</EM>
 
 # We also need a special case for *x*
 /\B\*([a-z])\*\B/ -hi-> <EM>$1</EM>
@@ -151,9 +149,8 @@
 # /\B#([a-z][a-z -]*[a-z])#\B/ -hi-> <STRONG>$1</STRONG>
 
 # Use this one instead if you want it to match more aggressively.
-# note that this doesn't use \w because we don't want to match numbers
-# since #1 is a common enough usage.
-/\B#([a-z-_]([a-z-_]|\s|\!|\?|,|;|:|\'|\.)*([a-z-_]|\.|\'|\"|:|\!|\?))#\B/ -hi-> <STRONG>$1</STRONG>
+# similar to the aggressive *emph* but also excluding things like #1
+/#([^0-9#][^#]*[^# \t\n])#/ -h-> <STRONG>$1</STRONG>
 
 # We also need a special case for #x#
 /\B#([a-z])#\B/ -hi-> <STRONG>$1</STRONG>

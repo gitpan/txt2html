@@ -53,8 +53,7 @@ $ok_str = "<P>Here is my list:
   <LI>Spam
   <LI>Jam
   <LI>Ham
-  <LI>Pickles
-</OL>
+  <LI>Pickles</OL>
 ";
 
 $out_str = $conv->process_chunk($test_str);

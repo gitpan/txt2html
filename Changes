@@ -1,6 +1,15 @@
 Revision history for txt2html
 =============================
 
+2.24 Sun 16th May 2004
+	- bug fixes for preformatting: fixed up loss of trailing PRE, and
+now preformats and lists no longer have a trailing blank line
+	- documented the 'quote_mail' and 'quote_explicit' classes, and added
+the 'mail_header' class for mail-header paragraphs.
+	- made the #bold# and *italic* matches more aggressive.
+	- added Alan Jackson's "demoronize" patch from John Walker's demoronize script
+at <http://www.fourmilab.ch/>
+
 2.23 Wed 25th February 2004
 	- oops! Forgot to include one of the test files!
 

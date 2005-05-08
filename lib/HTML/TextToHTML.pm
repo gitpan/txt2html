@@ -1,16 +1,25 @@
 package HTML::TextToHTML;
+use 5.006_001;
+use strict;
 #------------------------------------------------------------------------
 
 =head1 NAME
 
-HTML::TextToHTML - convert plain text file to HTML
+HTML::TextToHTML - convert plain text file to HTML.
+
+=head1 VERSION
+
+This describes version B<2.41> of HTML::TextToHTML.
+
+=cut
+
+our $VERSION = '2.41';
 
 =head1 SYNOPSIS
 
   From the command line:
 
-    perl -MHTML::TextToHTML -e run_txt2html -- I<arguments>;
-    (calls the txt2html method with the given arguments)
+    txt2html I<arguments>
 
   From Scripts:
 
@@ -34,53 +43,130 @@ HTML::TextToHTML - convert plain text file to HTML
 
 =head1 DESCRIPTION
 
-HTML::TextToHTML converts plain text files to HTML.
+HTML::TextToHTML converts plain text files to HTML. The txt2html script
+uses this module to do the same from the command-line.
 
 It supports headings, tables, lists, simple character markup, and
 hyperlinking, and is highly customizable. It recognizes some of the
 apparent structure of the source document (mostly whitespace and
 typographic layout), and attempts to mark that structure explicitly
 using HTML. The purpose for this tool is to provide an easier way of
-converting existing text documents to HTML format.
+converting existing text documents to HTML format, giving something nicer
+than just whapping the text into a big PRE block.
 
-There are two ways to use this module:
-    (1) called from a perl script
-    (2) call run_txt2html from the command line
+=head2 History
 
-The first usage requires one to create a HTML::TextToHTML object, and
-then call the txt2html or process_para method with suitable arguments.
-One can also pass arguments in when creating the object, or call the
-args method to pass arguments in.
+The original txt2html script was written by Seth Golub (see
+http://www.aigeek.com/txt2html/), and converted to a perl module by
+Kathryn Andersen (see http://www.katspace.com/tools/text_to_html/) and
+made into a sourceforge project by Sun Tong (see
+http://sourceforge.net/projects/txt2html/).  Earlier versions of the
+HTML::TextToHTML module called the included script texthyper so as not
+to clash with the original txt2html script, but now the projects have
+all been merged.
 
-The second usage allows one to pass arguments in from the command line, by
-calling perl and executing the module, and calling run_txt2html which
-creates an object for you and parses the command line.
+=head1 REQUIRES
 
-Either way, the arguments are the same.  See L</OPTIONS> for the
-arguments; see L</METHODS> for the methods of the HTML::TextToHTML object.
+HTML::TextToHTML requires Perl 5.6.1 or later.
 
-The following are the exported functions of this module:
+For installation, it needs:
 
-=over
+    Module::Build
 
-=item run_txt2html
+The txt2html script needs:
 
-    run_txt2html()
+    Getopt::Long
+    Getopt::ArgvFile
+    Pod::Usage
+    File::Basename
 
-This is what is used to run this module from the command-line.  It creates
-a HTML::TextToHTML object and parses the command-line arguments, and passes
-them to the object, and runs the txt2html method.  It takes no arguments.
+For testing, it also needs:
 
-=back
+    Test::More
+
+For debugging, it also needs:
+
+    Data::Dumper
+
+=head1 INSTALLATION
+
+Make sure you have the dependencies installed first!
+(see REQUIRES above)
+
+Some of those modules come standard with more recent versions of perl,
+but I thought I'd mention them anyway, just in case you may not have
+them.
+
+If you don't know how to install these, try using the CPAN module, an
+easy way of auto-installing modules from the Comprehensive Perl Archive
+Network, where the above modules reside.
+Do "perldoc perlmodinstall" or "perldoc CPAN" for more information.
+
+To install this module type the following:
+
+   perl Build.PL
+   ./Build
+   ./Build test
+   ./Build install
+
+Or, if you're on a platform (like DOS or Windows) that doesn't like the
+"./" notation, you can do this:
+
+   perl Build.PL
+   perl Build
+   perl Build test
+   perl Build install
+
+In order to install somewhere other than the default, such as
+in a directory under your home directory, like "/home/fred/perl"
+go
+
+   perl Build.PL --install_base /home/fred/perl
+
+as the first step instead.
+
+This will install the files underneath /home/fred/perl.
+
+You will then need to make sure that you alter the PERL5LIB variable to
+find the modules, and the PATH variable to find the script.
+
+Therefore you will need to change:
+your path, to include /home/fred/perl/script (where the script will be)
+
+	PATH=/home/fred/perl/script:${PATH}
+
+the PERL5LIB variable to add /home/fred/perl/lib
+
+	PERL5LIB=/home/fred/perl/lib:${PERL5LIB}
+
+Note that the system links dictionary will be installed as
+"/home/fred/perl/share/txt2html/txt2html.dict"
+
+If you want to install in a temporary install directory (such as
+if you are building a package) then instead of going
+
+   perl Build install
+
+go
+
+   perl Build install destdir=/my/temp/dir
+
+and it will be installed there, with a directory structure under
+/my/temp/dir the same as it would be if it were installed plain.
+Note that this is NOT the same as setting --install_base, because
+certain things are done at build-time which use the install_base info.
+
+See "perldoc perlrun" for more information on PERL5LIB, and
+see "perldoc Module::Build" for more information on
+installation options.
 
 =head1 OPTIONS
 
 All arguments can be set when the object is created, and further options
 can be set when calling the actual txt2html method. Arguments
 to methods can take either a hash of arguments, or a reference to an
-array (which will then be processed as if it were a command-line, which
-makes this easy to use from scripts even if you don't wish to use
-the commonly used Getopt::Long module in your script).
+array.  Note that the reference-to-array method is depricated and is only
+retained for backwards compatibility.
 
 Note that all option-names must match exactly -- no abbreviations are
 allowed.
@@ -342,7 +428,7 @@ tag).  If this is empty, no italicising of text will be done.
     "--links_dictionaries", "url_links.dict", "--links_dictionaries", "format_links.dict"
 
 File(s) to use as a link-dictionary.  There can be more than one of
-these.  These are in addition to the System Link Dictionary and the User
+these.  These are in addition to the Global Link Dictionary and the User
 Link Dictionary.  When the arguments are given as a hash, this expects a
 reference to an array of filenames.  When the arguments are given as a
 reference to an array, then the "--links_dictionaries" option must be
@@ -515,13 +601,6 @@ that short.
 This gives the URL of a stylesheet; a LINK tag will be added to the
 output.
 
-=item system_link_dict
-
-    system_link_dict=>I<filename>
-
-The name of the default "system" link dictionary.
-(default: "/usr/local/share/txt2html/txt2html.dict")
-
 =item tab_width
 
     tab_width=>I<n>
@@ -613,24 +692,11 @@ into lower-case.
 
 #------------------------------------------------------------------------
 
-use 5.005_03;
-use strict;
 
 require Exporter;
+use Data::Dumper;
 
-our @ISA;
-BEGIN {
-    @ISA = qw(Exporter);
-    require Exporter;
-    use Data::Dumper;
-}
-
-# Items to export into callers namespace by default. Note: do not export
-# names by default without a very good reason. Use EXPORT_OK instead.
-
-our @EXPORT = qw(run_txt2html);
 our $PROG = 'HTML::TextToHTML';
-our $VERSION = '2.40';
 
 #------------------------------------------------------------------------
 use constant TEXT_TO_HTML => "TEXT_TO_HTML";
@@ -733,8 +799,6 @@ our @xhtml_alignments = ('', '', ' style="text-align: right;"', ' style="text-al
 
     $conv = new HTML::TextToHTML()
 
-    $conv = new HTML::TextToHTML(\@args)
-
     $conv = new HTML::TextToHTML(titlefirst=>1,
 	...
     );
@@ -764,8 +828,6 @@ sub new {
 }    # new
 
 =head2 args
-
-    $conv->args(\@args)
 
     $conv->args(short_line_length=>60,
 	titlefirst=>1,
@@ -1459,8 +1521,6 @@ sub process_para ($$;%) {
 
 =head2 txt2html
 
-    $conv->txt2html(\@args);
-
     $conv->txt2html(%args);
 
 Convert a text file to HTML.  Takes a hash of arguments, or a reference
@@ -1647,7 +1707,6 @@ sub init_our_data ($) {
     $self->{preserve_indent} = 0;
     $self->{short_line_length} = 40;
     $self->{style_url} = '';
-    $self->{system_link_dict} = '/usr/local/share/txt2html/txt2html.dict';
     $self->{tab_width} = 8;
     $self->{table_type} = {
 	ALIGN => 1,
@@ -1681,13 +1740,38 @@ sub init_our_data ($) {
 
     $self->{__call_init_done}    = 0;
 
+    #
+    # The global links data
+    #
+    # This is stored in the DATA handle, after the __DATA__ at
+    # the end of this file; but because the test scripts (and possibly
+    # other scripts) don't just create one instance of this object,
+    # we have to remember the position of the DATA handle
+    # and reset it after we've read from it, just in case
+    # we have to read from it again.
+    # This also means that we don't close it, either.  Hope that doesn't
+    # cause a problem...
+    #
+    my $curpos = tell(DATA); # remember the __DATA__ position
+    my @lines = ();
+    while (<DATA>)
+    {
+	# skip lines that start with '#'
+	next if /^\#/;          
+	# skip lines that end with unescaped ':'
+	next if /^.*[^\\]:\s*$/;
+	push @lines, $_;
+    }
+    # reset the data handle to the start, just in case
+    seek(DATA,$curpos,0);
+    $self->{__global_links_data} = join('', @lines);
 }    # init_our_data
 
 #---------------------------------------------------------------#
 # txt2html-related subroutines
 
 #--------------------------------#
-# Name: init_our_data
+# Name: deal_with_options
 #   do extra processing related to particular options
 # Args:
 #   $self
@@ -1711,7 +1795,6 @@ sub deal_with_options ($) {
     }
     if (!$self->{make_links}) {
         $self->{'links_dictionaries'} = 0;
-        $self->{'system_link_dict'}  = "";
     }
     if ($self->{append_file}) {
         if (!-r $self->{append_file}) {
@@ -4120,6 +4203,12 @@ sub load_dictionary_links ($) {
 	my $contents = join('', @lines);
 	$self->parse_dict($dict, $contents);
     }
+    # last of all, do the system dictionary, already read in from DATA
+    if ($self->{__global_links_data})
+    {
+	$self->parse_dict("DATA", $self->{__global_links_data});
+    }
+
     $self->setup_dict_checking();
 } # load_dictionary_links
 
@@ -4243,8 +4332,6 @@ sub do_init_call ($) {
 	  if ($self->{make_links} && (-f $self->{default_link_dict}));
 	$self->deal_with_options();
 	if ($self->{make_links}) {
-	    push (@{$self->{links_dictionaries}}, ($self->{system_link_dict}))
-	      if -f $self->{system_link_dict};
 	    $self->load_dictionary_links();
 	}
      
@@ -4259,22 +4346,6 @@ sub do_init_call ($) {
 	$self->{__call_init_done} = 1;
     }
 } # do_init_call
-
-# run this from the command line
-sub run_txt2html {
-    my ($caller) = @_;    # ignore all passed in arguments,
-                          # because this only should look at ARGV
-
-    my $conv = new HTML::TextToHTML(\@ARGV);
-
-    my @args = ();
-
-    # now the remainder must be input-files
-    foreach my $df (@ARGV) {
-        push @args, "--infile", $df;
-    }
-    $conv->txt2html(\@args);
-} # run_txt2html
 
 =head1 FILE FORMATS
 
@@ -4496,10 +4567,8 @@ This can also have an optional caption at the start.
     my $conv = new HTML::TextToHTML();
 
     my $conv = new HTML::TextToHTML(title=>"Wonderful Things",
-			    system_link_dict=>$my_link_file,
+			    default_link_dict=>$my_link_file,
       );
-
-    my $conv = new HTML::TextToHTML(\@ARGV);
 
 =head2 Add further arguments
 
@@ -4515,12 +4584,6 @@ This can also have an optional caption at the start.
 		     title=>"Wonderful Things",
 		     mail=>1
       );
-
-    $conv->txt2html(["--file", $text_file,
-                     "--outfile", $html_file,
-		     "--title", "Wonderful Things",
-			 "--mail"
-      ]);
 
 =head1 NOTES
 
@@ -4543,28 +4606,174 @@ change the value of --underline_length_tolerance and/or
 
 Tell me about them.
 
-=head1 PREREQUSITES
-
-HTML::TextToHTML requires Perl 5.005_03 or later.
-
-It also requires Data::Dumper (only for debugging purposes)
-
-=head1 EXPORT
-
-run_txt2html
-
-=head1 AUTHOR
-
-Kathryn Andersen, E<lt>http//www.katspace.comE<gt> 2002,2003
-Original txt2html script copyright (C) 2000 Seth Golub <seth AT aigeek.com>
-
 =head1 SEE ALSO
 
 perl
 L<txt2html>.
 Data::Dumper
 
+=head1 AUTHOR
+
+    Kathryn Andersen (RUBYKAT)
+    perlkat AT katspace dot com
+    http//www.katspace.com/
+
+based on txt2html by Seth Golub
+
+=head1 COPYRIGHT AND LICENCE
+
+Original txt2html script copyright (c) 1994-2000 Seth Golub <seth AT aigeek.com>
+
+Copyright (c) 2002-2005 by Kathryn Andersen
+
+This program is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+
 =cut
 
 #------------------------------------------------------------------------
 1;
+__DATA__
+#
+# Global links dictionary file for HTML::TextToHTML
+# http://www.katspace.com/tools/text_to_html
+# http://txt2html.sourceforge.net/
+# based on links dictionary for Seth Golub's txt2html
+# http://www.aigeek.com/txt2html/
+#
+# This dictionary contains some patterns for converting obvious URLs,
+# ftp sites, hostnames, email addresses and the like to hrefs.
+#
+# Original adapted from the html.pl package by Oscar Nierstrasz in
+# the Software Archive of the Software Composition Group
+# http://iamwww.unibe.ch/~scg/Src/
+#
+
+# Some people even like to mark the URL label explicitly <URL:foo:label>
+/&lt;URL:([-\w\.\/:~_\@]+):([a-zA-Z0-9'() ]+)&gt;/ -h-> <A HREF="$1">$2</A>
+
+# Some people like to mark URLs explicitly <URL:foo>
+/&lt;URL:\s*(\S+?)\s*&gt;/ -h-> <A HREF="$1">$1</A>
+
+#  <http://site>
+/&lt;(http:\S+?)\s*&gt;/ -h-> &lt;<A HREF="$1">$1</A>&gt;
+
+# Urls: <service>:<rest-of-url>
+
+|snews:[\w\.]+|        -> $&
+|news:[\w\.]+|         -> $&
+|nntp:[\w/\.:+\-]+|    -> $&
+|http:[\w/\.:\@+\-~\%#?=&;,]+[\w/]|  -> $&
+|shttp:[\w/\.:+\-~\%#?=&;,]+| -> $&
+|https:[\w/\.:+\-~\%#?=&;,]+| -> $&
+|file:[\w/\.:+\-]+|     -> $&
+|ftp:[\w/\.:+\-]+|      -> $&
+|wais:[\w/\.:+\-]+|     -> $&
+|gopher:[\w/\.:+\-]+|   -> $&
+|telnet:[\w/\@\.:+\-]+|   -> $&
+
+
+# catch some newsgroups to avoid confusion with sites:
+|([^\w\-/\.:\@>])(alt\.[\w\.+\-]+[\w+\-]+)|    -h-> $1<A HREF="news:$2">$2</A>
+|([^\w\-/\.:\@>])(bionet\.[\w\.+\-]+[\w+\-]+)| -h-> $1<A HREF="news:$2">$2</A>
+|([^\w\-/\.:\@>])(bit\.[\w\.+\-]+[\w+\-]+)|    -h-> $1<A HREF="news:$2">$2</A>
+|([^\w\-/\.:\@>])(biz\.[\w\.+\-]+[\w+\-]+)|    -h-> $1<A HREF="news:$2">$2</A>
+|([^\w\-/\.:\@>])(clari\.[\w\.+\-]+[\w+\-]+)|  -h-> $1<A HREF="news:$2">$2</A>
+|([^\w\-/\.:\@>])(comp\.[\w\.+\-]+[\w+\-]+)|   -h-> $1<A HREF="news:$2">$2</A>
+|([^\w\-/\.:\@>])(gnu\.[\w\.+\-]+[\w+\-]+)|    -h-> $1<A HREF="news:$2">$2</A>
+|([^\w\-/\.:\@>])(humanities\.[\w\.+\-]+[\w+\-]+)| 
+          -h-> $1<A HREF="news:$2">$2</A>
+|([^\w\-/\.:\@>])(k12\.[\w\.+\-]+[\w+\-]+)|    -h-> $1<A HREF="news:$2">$2</A>
+|([^\w\-/\.:\@>])(misc\.[\w\.+\-]+[\w+\-]+)|   -h-> $1<A HREF="news:$2">$2</A>
+|([^\w\-/\.:\@>])(news\.[\w\.+\-]+[\w+\-]+)|   -h-> $1<A HREF="news:$2">$2</A>
+|([^\w\-/\.:\@>])(rec\.[\w\.+\-]+[\w+\-]+)|    -h-> $1<A HREF="news:$2">$2</A>
+|([^\w\-/\.:\@>])(soc\.[\w\.+\-]+[\w+\-]+)|    -h-> $1<A HREF="news:$2">$2</A>
+|([^\w\-/\.:\@>])(talk\.[\w\.+\-]+[\w+\-]+)|   -h-> $1<A HREF="news:$2">$2</A>
+|([^\w\-/\.:\@>])(us\.[\w\.+\-]+[\w+\-]+)|     -h-> $1<A HREF="news:$2">$2</A>
+|([^\w\-/\.:\@>])(ch\.[\w\.+\-]+[\w+\-]+)|     -h-> $1<A HREF="news:$2">$2</A>
+|([^\w\-/\.:\@>])(de\.[\w\.+\-]+[\w+\-]+)|     -h-> $1<A HREF="news:$2">$2</A>
+
+# FTP locations (with directory):
+# anonymous@<site>:<path>
+|(anonymous\@)([a-zA-Z][\w\.+\-]+\.[a-zA-Z]{2,}):(\s*)([\w\d+\-/\.]+)|
+  -h-> $1<A HREF="ftp://$2/$4">$2:$4</A>$3
+
+# ftp@<site>:<path>
+|(ftp\@)([a-zA-Z][\w\.+\-]+\.[a-zA-Z]{2,}):(\s*)([\w\d+\-/\.]+)|
+  -h-> $1<A HREF="ftp://$2/$4">$2:$4</A>$3
+
+# Email address
+|[a-zA-Z0-9_\+\-\.]+\@([a-zA-Z0-9][\w\.+\-]+\.[a-zA-Z]{2,})|
+  -> mailto:$&
+
+# <site>:<path>
+|([^\w\-/\.:\@>])([a-zA-Z][\w\.+\-]+\.[a-zA-Z]{2,}):(\s*)([\w\d+\-/\.]+)|
+  -h-> $1<A HREF="ftp://$2/$4">$2:$4</A>$3
+
+# NB: don't confuse an http server with a port number for
+# an FTP location!
+# internet number version: <internet-num>:<path>
+|([^\w\-/\.:\@])(\d{2,}\.\d{2,}\.\d+\.\d+):([\w\d+\-/\.]+)|
+  -h-> $1<A HREF="ftp://$2/$3">$2:$3</A>
+
+# telnet <site> <port>
+|telnet ([a-zA-Z][\w+\-]+(\.[\w\.+\-]+)+\.[a-zA-Z]{2,})\s+(\d{2,4})|
+  -h-> telnet <A HREF="telnet://$1:$3/">$1 $3</A>
+
+# ftp <site>
+|ftp ([a-zA-Z][\w+\-]+(\.[\w\.+\-]+)+\.[a-zA-Z]{2,})|
+  -h-> ftp <A HREF="ftp://$1/">$1</A>
+
+# host with "ftp" in the machine name
+|\b([a-zA-Z][\w])*ftp[\w]*(\.[\w+\-]+){2,}| -h-> ftp <A HREF="ftp://$&/">$&</A>
+
+# ftp.foo.net/blah/
+|ftp(\.[a-zA-Z0-9_\@:-]+)+/\S+| -> ftp://$&
+
+# www.thehouse.org/txt2html/
+|www(\.[a-zA-Z0-9_\@:-]+)+/\S+| -> http://$&
+
+# host with "www" in the machine name
+|\b([a-zA-Z][\w])*www[\w]*(\.[\w+\-]+){2,}| -> http://$&/
+
+# <site> <port>
+|([a-zA-Z][\w+\-]+\.[\w+\-]+\.[a-zA-Z]{2,})\s+(\d{2,4})|
+  -h-> <A HREF="telnet://$1:$2/">$1 $2</A>
+
+# just internet numbers with port:
+|([^\w\-/\.:\@])(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+(\d{1,4})|
+  -h-> $1<A HREF="telnet://$2:$3">$2 $3</A>
+
+# just internet numbers:
+|([^\w\-/\.:\@])(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})|
+  -h-> $1<A HREF="telnet://$2">$2</A>
+
+# RFCs
+/RFC ?(\d+)/ -i-> http://www.cis.ohio-state.edu/rfc/rfc$1.txt
+
+# This would turn "f^H_o^H_o^H_" into "<U>foo</U>".  Gross, isn't it?
+# Thanks to Mark O'Dell <emark@cns.caltech.edu> for fixing this. 
+#
+# /(.\\010_)+/ -he-> $tmp = $&;$tmp =~ s@\010_@@g;"<U>$tmp</U>"
+# /(_\\010.)+/ -he-> $tmp = $&;$tmp =~ s@_\010@@g;"<U>$tmp</U>"
+# /(.\^H_)+/ -he-> $tmp = $&;$tmp =~ s@\^H_@@g;"<U>$tmp</U>"
+# /(_\^H.)+/ -he-> $tmp = $&;$tmp =~ s@_\^H@@g;"<U>$tmp</U>"
+
+# Mark _underlined stuff_ as <U>underlined stuff</U>
+# Don't mistake variable names for underlines, and
+# take account of possible trailing punctuation
+/([ \t\n])_([a-z][a-z0-9 -]*[a-z])_([ \t\n\.;:,\!\?])/ -hi-> $1<U>$2</U>$3
+
+# Seth and his amazing conversion program    :-)
+
+"Seth Golub"  -io-> http://www.aigeek.com/
+"txt2html"    -io-> http://txt2html.sourceforge.net/
+
+# Kathryn and her amazing modules 8-)
+"Kathryn Andersen"  -io-> http://www.katspace.com/
+"HTML::TextToHTML"  -io-> http://www.katspace.com/tools/text_to_html/
+"hypertoc"          -io-> http://www.katspace.com/tools/hypertoc/
+"HTML::GenToc"      -io-> http://www.katspace.com/tools/hypertoc/
+
+# End of global dictionary
+

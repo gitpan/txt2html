@@ -1,17 +1,13 @@
 Build.PL
+Makefile.PL
 Changes
 DEVNOTES
-INSTALL
-lib/HTML/TextToHTML.PL
 lib/HTML/TextToHTML.pm
-LICENSE
 MANIFEST
 MANIFEST.SKIP
 META.yml			Module meta-data (added by MakeMaker)
-MyUpdatePath.pm
 old_version.txt
 README
-scripts/txt2html.PL
 scripts/txt2html
 t/00_dist.test
 t/10para.t
@@ -75,5 +71,4 @@ tfiles/table-delim.txt
 tfiles/table-pgsql.txt
 tfiles/table-pgsql2.txt
 TODO
-txt2html.dict
 version.txt

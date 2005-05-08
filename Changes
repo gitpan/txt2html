@@ -1,6 +1,15 @@
 Revision history for txt2html
 =============================
 
+2.41 Sun 8th May 2005
+	- solved the system links dictionary problem!  No longer uses
+an external file at all, uses the DATA handle.  This means that there is
+no longer a --system_link_dict option.
+	- changed versioning scheme; now bugfix versions will be
+things like 2.4101
+	- removed the run_txt2html command; it isn't needed when the txt2html script is part of the package and does things much nicer.
+	- generate the README from the PoD
+
 2.40 Sat 12th February 2005
 	- much improved speed
 

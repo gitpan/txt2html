@@ -1,9 +1,19 @@
 #!/usr/bin/env perl
+use 5.006_001;
+use strict;
 ##---------------------------------------------------------------------------##
 
 =head1 NAME
 
-txt2html - convert plain text file to HTML
+txt2html - convert plain text file to HTML.
+
+=head1 VERSION
+
+This describes version B<2.41> of txt2html.
+
+=cut
+
+our $VERSION = '2.41';
 
 =head1 SYNOPSIS
 
@@ -27,9 +37,9 @@ txt2html [ --append_file I<filename> ] [ --append_head I<filename> ]
     [ --preformat_start_marker I<regexp> ] [ --preformat_end_marker I<regexp> ]
     [ --preformat_whitespace_min I<n> ] [ --prepend_file I<filename> ]
     [ --preserve_indent ] [ --short_line_length I<n> ]
-    [ --style_url I<stylesheet_url> ] [ --system_link_dict I<filename> ]
-    [ --tab_width I<n> ] [ --table_type I<type>=0/1 ]
-    [ --title I<title> ] [ --titlefirst ] [ --underline_length_tolerance I<n> ]
+    [ --style_url I<stylesheet_url> ] [ --tab_width I<n> ]
+    [ --table_type I<type>=0/1 ] [ --title I<title> ] [ --titlefirst ]
+    [ --underline_length_tolerance I<n> ]
     [ --underline_offset_tolerance I<n> ] [ --unhyphenation ]
     [ --use_mosaic_header ] [ --use_preformat_marker ] [ --xhtml ] file ...
 
@@ -385,11 +395,6 @@ that short.
 This gives the URL of a stylesheet; a LINK tag will be added to the
 output.
 
-=item --system_link_dict I<filename>
-
-The name of the default "system" link dictionary.
-(default: "/usr/local/share/txt2html/txt2html.dict")
-
 =item --tab_width I<n> | --tabwidth I<n> | -tw I<n>
 
 How many spaces equal a tab?
@@ -474,7 +479,6 @@ the option name (I<including> the --) followed by its value (if any).
 For example:
 
     # set link dictionaries
-    --system_link_dict /etc/txt2html.dict
     --default_link_dict /home/kat/.TextToHTML.dict
 
     # set options for poetry
@@ -739,30 +743,25 @@ Getopt::ArgvFile
 
 =head1 AUTHOR
 
-Kathryn Andersen      http://www.katspace.com
-based on txt2html by Seth Golub
+    Kathryn Andersen (RUBYKAT)
+    perlkat AT katspace dot com
+    http//www.katspace.com/
 
+based on txt2html by Seth Golub
 
 =head1 COPYRIGHT
 
-Original txt2html script copyright (C) 1994-2000 Seth Golub seth AT aigeek.com
-Copyright (C) 2002-2003 Kathryn Andersen
-All rights reserved.
+Original txt2html script copyright (c) 1994-2000 Seth Golub seth AT aigeek.com
+
+Copyright (c) 2002-2005 Kathryn Andersen
+
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
 =cut
 
 #################################################################
-# Globals
-#
-use vars qw($VERSION);
-$VERSION = '2.40';
-
-#################################################################
 # Includes
-require 5.005_03;
-use strict;
 use Pod::Usage;
 use Getopt::Long;
 use File::Basename;
@@ -847,7 +846,6 @@ sub process_args ($) {
 	'preserve_indent|pi!',
 	'short_line_length|shortline|s=n',
 	'style_url=s',
-	'system_link_dict|sysdict=s',
 	'tab_width|tabwidth|tw=n',
 	'table_type=n%',
 	'title|t=s',

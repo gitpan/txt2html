@@ -1,24 +1,22 @@
---- #YAML:1.0
+---
 name: txt2html
-version: 2.40
+version: 2.41
 author:
   - Kathryn Andersen
-abstract: convert plain text file to HTML
+abstract: convert plain text file to HTML.
 license: perl
 requires:
   Data::Dumper: 0
   File::Basename: 0
-  File::Spec: 0
   Getopt::ArgvFile: 0
   Getopt::Long: 0
   Pod::Usage: 0
   perl: 5.6.1
 build_requires:
-  Filter::Simple: 0.79
   Module::Build: 0.26
   Test::More: 0
 provides:
   HTML::TextToHTML:
     file: lib/HTML/TextToHTML.pm
-    version: 2.40
-generated_by: Module::Build version 0.2608
+    version: 2.41
+generated_by: Module::Build version 0.261

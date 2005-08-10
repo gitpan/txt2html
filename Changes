@@ -1,6 +1,14 @@
 Revision history for txt2html
 =============================
 
+2.42 Wed 10th August 2005
+	- new option to txt2html script: --instring, which enables one
+to process a string instead of a file.
+	- new options to HTML::TextToHTML:
+	  * instring, as above
+	  * inhandle, which enables one to pass in input file handles to process
+	  * outhandle, which enables one to pass in an output file handle
+
 2.41 Sun 8th May 2005
 	- solved the system links dictionary problem!  No longer uses
 an external file at all, uses the DATA handle.  This means that there is

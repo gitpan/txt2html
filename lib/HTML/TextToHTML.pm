@@ -9,11 +9,11 @@ HTML::TextToHTML - convert plain text file to HTML.
 
 =head1 VERSION
 
-This describes version B<2.41> of HTML::TextToHTML.
+This describes version B<2.42> of HTML::TextToHTML.
 
 =cut
 
-our $VERSION = '2.41';
+our $VERSION = '2.42';
 
 =head1 SYNOPSIS
 
@@ -189,6 +189,9 @@ value following the --option is added to the current set for that
 option,  to add more, one just repeats the --option with the next value,
 and in order to reset that option to empty, the special value of "CLEAR"
 must be added to the list.
+
+NOTE: the reference-to-an-array usage is DEPRECATED and will be removed
+in the future.
 
 =over
 
@@ -410,7 +413,29 @@ are given as a reference to an array, then the "--infile" option must
 be repeated for each new file added to the list.  If you want to reset
 the list to be empty, give the special value of "CLEAR".
 
+The special filename '-' designates STDIN.
+
+See also L</inhandle> and L</instring>.
+
 (default:-)
+
+=item inhandle
+
+    inhandle=>\@my_handles
+    inhandle=>[\*MYINHANDLE, \*STDIN]
+
+An array of input filehandles; use this instead of
+L</infile> or L</instring> to use a filehandle or filehandles
+as input.
+
+=item instring
+
+    instring=>\@my_strings
+    instring=>[$string1, $string2]
+
+An array of input strings; use this instead of
+L</infile> or L</inhandle> to use a string or strings
+as input.
 
 =item italic_delimiter
 
@@ -504,6 +529,11 @@ min sequential CAPS for an all-caps line
 The name of the output file.  If it is "-" then the output goes
 to Standard Output.
 (default: - )
+
+=item outhandle
+
+The output filehandle; if this is given then the output goes
+to this filehandle instead of to the file given in L</outfile>.
 
 =item par_indent
 
@@ -692,7 +722,6 @@ into lower-case.
 
 #------------------------------------------------------------------------
 
-
 require Exporter;
 use Data::Dumper;
 
@@ -707,7 +736,7 @@ use constant TEXT_TO_HTML => "TEXT_TO_HTML";
 
 # These are just constants I use for making bit vectors to keep track
 # of what modes I'm in and what actions I've taken on the current and
-# previous lines.  
+# previous lines.
 
 our $NONE         = 0;
 our $LIST         = 1;
@@ -735,7 +764,7 @@ our $LINK_HTML      = 4;
 our $LINK_ONCE      = 8;
 our $LINK_SECT_ONCE = 16;
 
-# Constants for Ordered Lists and Unordered Lists.  
+# Constants for Ordered Lists and Unordered Lists.
 # And Definition Lists.
 # I use this in the list stack to keep track of what's what.
 
@@ -744,10 +773,10 @@ our $UL = 2;
 our $DL = 3;
 
 # Constants for table types
-our $TAB_ALIGN = 1;
-our $TAB_PGSQL = 2;
+our $TAB_ALIGN  = 1;
+our $TAB_PGSQL  = 2;
 our $TAB_BORDER = 3;
-our $TAB_DELIM = 4;
+our $TAB_DELIM  = 4;
 
 # Character entity names
 # characters to replace with entities
@@ -783,13 +812,14 @@ our %char_entities = (
     "\366", "&ouml;",   "\367", "&divide;", "\370", "&oslash;",
     "\371", "&ugrave;", "\372", "&uacute;", "\373", "&ucirc;",
     "\374", "&uuml;",   "\375", "&yacute;", "\376", "&thorn;",
-    "\377", "&yuml;", "\267", "&middot;",
+    "\377", "&yuml;",   "\267", "&middot;",
 );
 
 # alignments for tables
-our @alignments = ('', '', ' ALIGN="RIGHT"', ' ALIGN="CENTER"');
+our @alignments    = ('', '', ' ALIGN="RIGHT"', ' ALIGN="CENTER"');
 our @lc_alignments = ('', '', ' align="right"', ' align="center"');
-our @xhtml_alignments = ('', '', ' style="text-align: right;"', ' style="text-align: center;"');
+our @xhtml_alignments =
+  ('', '', ' style="text-align: right;"', ' style="text-align: center;"');
 
 #---------------------------------------------------------------#
 # Object interface
@@ -812,9 +842,10 @@ See L</OPTIONS> for the possible values of the arguments.
 
 =cut
 
-sub new {
+sub new
+{
     my $invocant = shift;
-    my $self = {};
+    my $self     = {};
 
     my $class = ref($invocant) || $invocant;    # Object or class name
     init_our_data($self);
@@ -839,155 +870,198 @@ Takes either a hash, or a reference to an array of arguments, which will
 be used in invocations of other methods.
 See L</OPTIONS> for the possible values of the arguments.
 
+NOTE: the reference-to-an-array usage is DEPRECATED and will be removed
+in the future.
+
 =cut
 
-sub args {
-    my $self     = shift;
-    my %args = ();
+sub args
+{
+    my $self      = shift;
+    my %args      = ();
     my @arg_array = ();
-    if (@_ && @_ == 1)
+    if (   @_
+        && @_ == 1
+        && ref $_[0] eq 'ARRAY')
     {
-	# assume this is a reference to an array -- use the old style args
-	my $aref = shift;
-	@arg_array = @{$aref};
+        # this is a reference to an array -- use the old style args
+        my $aref = shift;
+        @arg_array = @{$aref};
     }
     elsif (@_)
     {
-	%args = @_;
+        %args = @_;
     }
 
-    if (%args) {
-	if ($self->{debug}) {
-	    print STDERR "========args(hash)========\n";
-	    print STDERR Dumper(%args);
-	}
-	foreach my $arg (keys %args) {
-	    if (defined $args{$arg}) {
-		if ($arg =~ /^-/) {
-		    $arg =~ s/^-//; # get rid of first dash
-		    $arg =~ s/^-//; # get rid of possible second dash
-		}
-		if ($self->{debug}) {
-		    print STDERR "--", $arg;
-		}
-		$self->{$arg} = $args{$arg};
-		if ($self->{debug}) {
-		    print STDERR " ", $args{$arg}, "\n";
-		}
-	    }
-	}
-    } elsif (@arg_array) {
-	if ($self->{debug}) {
-	    print STDERR "========args(array)========\n";
-	    print STDERR Dumper(@arg_array);
-	}
-	# the arg array may have filenames at the end of it,
-	# so don't consume them
-	my $look_at_args = 1;
-	while (@arg_array && $look_at_args) {
-	    my $arg = shift @arg_array;
-	    # check for arguments which are bools,
-	    # and thus have no companion value
-	    if ($arg =~ /^-/) {
-		$arg =~ s/^-//; # get rid of first dash
-		$arg =~ s/^-//; # get rid of possible second dash
-		if ($self->{debug}) {
-		    print STDERR "--", $arg;
-		}
-		if ($arg eq 'debug'
-		    || $arg eq 'demoronize'
-		    || $arg eq 'eight_bit_clean'
-		    || $arg eq 'escape_HTML_chars'
-		    || $arg eq 'explicit_headings'
-		    || $arg eq 'extract'
-		    || $arg eq 'link_only'
-		    || $arg eq 'lower_case_tags'
-		    || $arg eq 'mailmode'
-		    || $arg eq 'make_anchors'
-		    || $arg eq 'make_links'
-		    || $arg eq 'make_tables'
-		    || $arg eq 'preserve_indent'
-		    || $arg eq 'titlefirst'
-		    || $arg eq 'unhyphenation'
-		    || $arg eq 'use_mosaic_header'
-		    || $arg eq 'use_preformat_marker'
-		    || $arg eq 'verbose'
-		    || $arg eq 'xhtml'
-		) {
-		    $self->{$arg} = 1;
-		    if ($self->{debug}) {
-			print STDERR "=true\n";
-		    }
-		} elsif ($arg eq 'nodebug'
-		    || $arg eq 'nodemoronize'
-		    || $arg eq 'noeight_bit_clean'
-		    || $arg eq 'noescape_HTML_chars'
-		    || $arg eq 'noexplicit_headings'
-		    || $arg eq 'noextract'
-		    || $arg eq 'nolink_only'
-		    || $arg eq 'nolower_case_tags'
-		    || $arg eq 'nomailmode'
-		    || $arg eq 'nomake_anchors'
-		    || $arg eq 'nomake_links'
-		    || $arg eq 'nomake_tables'
-		    || $arg eq 'nopreserve_indent'
-		    || $arg eq 'notitlefirst'
-		    || $arg eq 'nounhyphenation'
-		    || $arg eq 'nouse_mosaic_header'
-		    || $arg eq 'nouse_preformat_marker'
-		    || $arg eq 'noverbose'
-		    || $arg eq 'noxhtml'
-		) {
-		    $arg =~ s/^no//;
-		    $self->{$arg} = 0;
-		    if ($self->{debug}) {
-			print STDERR " $arg=false\n";
-		    }
-		} else {
-		    my $val = shift @arg_array;
-		    if ($self->{debug}) {
-			print STDERR "=", $val, "\n";
-		    }
-		    # check the types
-		    if (defined $arg && defined $val) {
-			if ($arg eq 'infile' 
-			    || $arg eq 'custom_heading_regexp'
-			    || $arg eq 'links_dictionaries'
-			) {	# arrays
-			    if ($val eq 'CLEAR') {
-				$self->{$arg} = [];
-			    } else {
-				push @{$self->{$arg}}, $val;
-			    }
-			} elsif ($arg eq 'file') {	# alternate for 'infile'
-			    if ($val eq 'CLEAR') {
-				$self->{infile} = [];
-			    } else {
-				push @{$self->{infile}}, $val;
-			    }
-			} elsif ($arg eq 'table_type') {
-			    # hash
-			    if ($val eq 'CLEAR') {
-				$self->{$arg} = {};
-			    } else {
-				my ($f1, $v1) = split(/=/, $val, 2);
-				$self->{$arg}->{$f1} = $v1;
-			    }
-			} else {
-			    $self->{$arg} = $val;
-			}
-		    }
-		}
-	    } else {
-		# if an option don't start with - then we've
-		# come to the end of the options
-		$look_at_args = 0;
-	    }
-	}
+    if (%args)
+    {
+        if ($self->{debug})
+        {
+            print STDERR "========args(hash)========\n";
+            print STDERR Dumper(%args);
+        }
+        foreach my $arg (keys %args)
+        {
+            if (defined $args{$arg})
+            {
+                if ($arg =~ /^-/)
+                {
+                    $arg =~ s/^-//;    # get rid of first dash
+                    $arg =~ s/^-//;    # get rid of possible second dash
+                }
+                if ($self->{debug})
+                {
+                    print STDERR "--", $arg;
+                }
+                $self->{$arg} = $args{$arg};
+                if ($self->{debug})
+                {
+                    print STDERR " ", $args{$arg}, "\n";
+                }
+            }
+        }
+    }
+    elsif (@arg_array)
+    {
+        if ($self->{debug})
+        {
+            print STDERR "========args(array)========\n";
+            print STDERR Dumper(@arg_array);
+        }
+        # the arg array may have filenames at the end of it,
+        # so don't consume them
+        my $look_at_args = 1;
+        while (@arg_array && $look_at_args)
+        {
+            my $arg = shift @arg_array;
+            # check for arguments which are bools,
+            # and thus have no companion value
+            if ($arg =~ /^-/)
+            {
+                $arg =~ s/^-//;    # get rid of first dash
+                $arg =~ s/^-//;    # get rid of possible second dash
+                if ($self->{debug})
+                {
+                    print STDERR "--", $arg;
+                }
+                if (   $arg eq 'debug'
+                    || $arg eq 'demoronize'
+                    || $arg eq 'eight_bit_clean'
+                    || $arg eq 'escape_HTML_chars'
+                    || $arg eq 'explicit_headings'
+                    || $arg eq 'extract'
+                    || $arg eq 'link_only'
+                    || $arg eq 'lower_case_tags'
+                    || $arg eq 'mailmode'
+                    || $arg eq 'make_anchors'
+                    || $arg eq 'make_links'
+                    || $arg eq 'make_tables'
+                    || $arg eq 'preserve_indent'
+                    || $arg eq 'titlefirst'
+                    || $arg eq 'unhyphenation'
+                    || $arg eq 'use_mosaic_header'
+                    || $arg eq 'use_preformat_marker'
+                    || $arg eq 'verbose'
+                    || $arg eq 'xhtml')
+                {
+                    $self->{$arg} = 1;
+                    if ($self->{debug})
+                    {
+                        print STDERR "=true\n";
+                    }
+                }
+                elsif ($arg eq 'nodebug'
+                    || $arg eq 'nodemoronize'
+                    || $arg eq 'noeight_bit_clean'
+                    || $arg eq 'noescape_HTML_chars'
+                    || $arg eq 'noexplicit_headings'
+                    || $arg eq 'noextract'
+                    || $arg eq 'nolink_only'
+                    || $arg eq 'nolower_case_tags'
+                    || $arg eq 'nomailmode'
+                    || $arg eq 'nomake_anchors'
+                    || $arg eq 'nomake_links'
+                    || $arg eq 'nomake_tables'
+                    || $arg eq 'nopreserve_indent'
+                    || $arg eq 'notitlefirst'
+                    || $arg eq 'nounhyphenation'
+                    || $arg eq 'nouse_mosaic_header'
+                    || $arg eq 'nouse_preformat_marker'
+                    || $arg eq 'noverbose'
+                    || $arg eq 'noxhtml')
+                {
+                    $arg =~ s/^no//;
+                    $self->{$arg} = 0;
+                    if ($self->{debug})
+                    {
+                        print STDERR " $arg=false\n";
+                    }
+                }
+                else
+                {
+                    my $val = shift @arg_array;
+                    if ($self->{debug})
+                    {
+                        print STDERR "=", $val, "\n";
+                    }
+                    # check the types
+                    if (defined $arg && defined $val)
+                    {
+                        if (   $arg eq 'infile'
+                            || $arg eq 'custom_heading_regexp'
+                            || $arg eq 'links_dictionaries')
+                        {    # arrays
+                            if ($val eq 'CLEAR')
+                            {
+                                $self->{$arg} = [];
+                            }
+                            else
+                            {
+                                push @{$self->{$arg}}, $val;
+                            }
+                        }
+                        elsif ($arg eq 'file')
+                        {    # alternate for 'infile'
+                            if ($val eq 'CLEAR')
+                            {
+                                $self->{infile} = [];
+                            }
+                            else
+                            {
+                                push @{$self->{infile}}, $val;
+                            }
+                        }
+                        elsif ($arg eq 'table_type')
+                        {
+                            # hash
+                            if ($val eq 'CLEAR')
+                            {
+                                $self->{$arg} = {};
+                            }
+                            else
+                            {
+                                my ($f1, $v1) = split(/=/, $val, 2);
+                                $self->{$arg}->{$f1} = $v1;
+                            }
+                        }
+                        else
+                        {
+                            $self->{$arg} = $val;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                # if an option don't start with - then we've
+                # come to the end of the options
+                $look_at_args = 0;
+            }
+        }
     }
     if ($self->{debug})
     {
-    	print STDERR Dumper($self);
+        print STDERR Dumper($self);
     }
 
     return 1;
@@ -1019,48 +1093,56 @@ paragraph in the string (ie it contains blank lines) then this option
 will be ignored.
 
 =cut
-sub process_chunk ($$;%) {
-    my $self = shift;
+
+sub process_chunk ($$;%)
+{
+    my $self  = shift;
     my $chunk = shift;
-    my %args = (
-	close_tags=>1,
-	is_fragment=>0,
-	@_
+    my %args  = (
+        close_tags  => 1,
+        is_fragment => 0,
+        @_
     );
 
     my $ret_str = '';
-    my @paras = split(/\r?\n\r?\n/, $chunk);
-    my $ind = 0;
-    if (@paras == 1) # just one paragraph
+    my @paras   = split(/\r?\n\r?\n/, $chunk);
+    my $ind     = 0;
+    if (@paras == 1)    # just one paragraph
     {
-	$ret_str .= $self->process_para($chunk,
-				close_tags=>$args{close_tags},
-				is_fragment=>$args{is_fragment});
+        $ret_str .= $self->process_para(
+            $chunk,
+            close_tags  => $args{close_tags},
+            is_fragment => $args{is_fragment}
+        );
     }
     else
     {
-	my $ind = 0;
-	foreach my $para (@paras)
-	{
-	    # if the paragraph doesn't end with a newline, add one
-	    $para .= "\n" if ($para !~ /\n$/);
-	    if ($ind == @paras - 1) # last one
-	    {
-		$ret_str .= $self->process_para($para,
-			close_tags=>$args{close_tags},
-			is_fragment=>0);
-	    }
-	    else
-	    {
-		$ret_str .= $self->process_para($para,
-			close_tags=>0,
-			is_fragment=>0);
-	    }
-	    $ind++;
-	}
+        my $ind = 0;
+        foreach my $para (@paras)
+        {
+            # if the paragraph doesn't end with a newline, add one
+            $para .= "\n" if ($para !~ /\n$/);
+            if ($ind == @paras - 1)    # last one
+            {
+                $ret_str .= $self->process_para(
+                    $para,
+                    close_tags  => $args{close_tags},
+                    is_fragment => 0
+                );
+            }
+            else
+            {
+                $ret_str .= $self->process_para(
+                    $para,
+                    close_tags  => 0,
+                    is_fragment => 0
+                );
+            }
+            $ind++;
+        }
     }
     $ret_str;
-} # process_chunk
+}    # process_chunk
 
 =head2 process_para
 
@@ -1089,13 +1171,15 @@ If you want this string to be treated as a fragment, and not assumed to be
 a paragraph, set is_fragment to true.
 
 =cut
-sub process_para ($$;%) {
+
+sub process_para ($$;%)
+{
     my $self = shift;
     my $para = shift;
     my %args = (
-	close_tags=>1,
-	is_fragment=>0,
-	@_
+        close_tags  => 1,
+        is_fragment => 0,
+        @_
     );
 
     # if this is an external call, do certain initializations
@@ -1104,420 +1188,473 @@ sub process_para ($$;%) {
     my $para_action = $NONE;
 
     # tables and mailheaders don't carry over from one para to the next
-    if ($self->{__mode} & $TABLE) {
+    if ($self->{__mode} & $TABLE)
+    {
         $self->{__mode} ^= $TABLE;
     }
-    if ($self->{__mode} & $MAILHEADER) {
+    if ($self->{__mode} & $MAILHEADER)
+    {
         $self->{__mode} ^= $MAILHEADER;
     }
 
     # convert Microsoft character codes into sensible characters
-    if ($self->{demoronize}) {
-	demoronize_char($para);
+    if ($self->{demoronize})
+    {
+        demoronize_char($para);
     }
 
     # if we are not just linking, we are discerning structure
-    if (!$self->{link_only}) {
+    if (!$self->{link_only})
+    {
 
-	# Chop trailing whitespace and DOS CRs
-	$para =~ s/[ \011]*\015$//;
-	# Chop leading whitespace and DOS CRs
-	$para =~ s/^[ \011]*\015//;
-	$para =~ s/\r//g; # remove any stray carriage returns
+        # Chop trailing whitespace and DOS CRs
+        $para =~ s/[ \011]*\015$//;
+        # Chop leading whitespace and DOS CRs
+        $para =~ s/^[ \011]*\015//;
+        $para =~ s/\r//g;             # remove any stray carriage returns
 
-	my @done_lines = (); # lines which have been processed
+        my @done_lines = ();          # lines which have been processed
 
-	# The PRE_EXPLICIT structure can carry over from one
-	# paragraph to the next, but it is ended with the
-	# explicit end-tag designated for it.
-	# Therefore we can shortcut for this by checking
-	# for the end of the PRE_EXPLICIT and chomping off
-	# the preformatted string part of this para before
-	# we have to split it into lines.
-	# Note that after this check, we could *still* be
-	# in PRE_EXPLICIT mode.
-	if ($self->{__mode} & $PRE_EXPLICIT) {
-	    my $pre_str = $self->split_end_explicit_preformat(
-				    para_ref=>\$para);
-	    if ($pre_str) {
-		push @done_lines, $pre_str;
-	    }
-	}
+        # The PRE_EXPLICIT structure can carry over from one
+        # paragraph to the next, but it is ended with the
+        # explicit end-tag designated for it.
+        # Therefore we can shortcut for this by checking
+        # for the end of the PRE_EXPLICIT and chomping off
+        # the preformatted string part of this para before
+        # we have to split it into lines.
+        # Note that after this check, we could *still* be
+        # in PRE_EXPLICIT mode.
+        if ($self->{__mode} & $PRE_EXPLICIT)
+        {
+            my $pre_str =
+              $self->split_end_explicit_preformat(para_ref => \$para);
+            if ($pre_str)
+            {
+                push @done_lines, $pre_str;
+            }
+        }
 
-	if (defined $para && $para ne "") {
-	    #
-	    # Now we split the paragraph into lines
-	    #
-	    my $para_len         = length($para);
-	    my @para_lines       = split (/^/, $para);
-	    my @para_line_len    = ();
-	    my @para_line_indent = ();
-	    my @para_line_action = ();
-	    my $i = 0;
-	    foreach my $line (@para_lines) {
-		# Change all tabs to spaces
-		while ($line =~ /\011/) {
-		    my $tw = $self->{tab_width};
-		    $line =~ s/\011/" " x ($tw - (length($`) % $tw))/e;
-		}
-		push @para_line_len, length($line);
-		if ($line =~ /^\s*$/)
-		{
-		    # if the line is blank, use the previous indent
-		    # if there is one
-		    push @para_line_indent,
-		    	($i == 0 ? 0 : $para_line_indent[$i-1]);
-		}
-		else
-		{
-		    # count the number of leading spaces
-		    my ($ws) = $line =~ /^( *)[^ ]/;
-		    push @para_line_indent, length($ws);
-		}
-		push @para_line_action, $NONE;
-	    	$i++;
-	    }
+        if (defined $para && $para ne "")
+        {
+            #
+            # Now we split the paragraph into lines
+            #
+            my $para_len         = length($para);
+            my @para_lines       = split(/^/, $para);
+            my @para_line_len    = ();
+            my @para_line_indent = ();
+            my @para_line_action = ();
+            my $i                = 0;
+            foreach my $line (@para_lines)
+            {
+                # Change all tabs to spaces
+                while ($line =~ /\011/)
+                {
+                    my $tw = $self->{tab_width};
+                    $line =~ s/\011/" " x ($tw - (length($`) % $tw))/e;
+                }
+                push @para_line_len, length($line);
+                if ($line =~ /^\s*$/)
+                {
+                    # if the line is blank, use the previous indent
+                    # if there is one
+                    push @para_line_indent,
+                      ($i == 0 ? 0 : $para_line_indent[$i - 1]);
+                }
+                else
+                {
+                    # count the number of leading spaces
+                    my ($ws) = $line =~ /^( *)[^ ]/;
+                    push @para_line_indent, length($ws);
+                }
+                push @para_line_action, $NONE;
+                $i++;
+            }
 
-	    # There are two more structures which carry over from one
-	    # paragraph to the next: LIST, PRE
-	    # There are also certain things which will immediately end
-	    # multi-paragraph LIST and PRE, if found at the start
-	    # of a paragraph:
-	    # A list will be ended by
-	    # TABLE, MAILHEADER, HEADER, custom-header
-	    # A PRE will be ended by
-	    # TABLE, MAILHEADER and non-pre text
+            # There are two more structures which carry over from one
+            # paragraph to the next: LIST, PRE
+            # There are also certain things which will immediately end
+            # multi-paragraph LIST and PRE, if found at the start
+            # of a paragraph:
+            # A list will be ended by
+            # TABLE, MAILHEADER, HEADER, custom-header
+            # A PRE will be ended by
+            # TABLE, MAILHEADER and non-pre text
 
-	    my $is_table = 0;
-	    my $table_type = 0;
-	    my $is_mailheader = 0;
-	    my $is_header = 0;
-	    my $is_custom_header = 0;
-	    if (@{$self->{custom_heading_regexp}}) {
-		$is_custom_header =
-		    $self->is_custom_heading(line=>$para_lines[0]);
-	    }
-	    if ($self->{make_tables}
-		&& @para_lines > 1) {
-		$table_type = $self->get_table_type(rows_ref=>\@para_lines,
-						    para_len=>$para_len);
-		$is_table = ($table_type != 0);
-	    }
-	    if (!$self->{explicit_headings}
-		&& @para_lines > 1
-		&& !$is_table)
-	    {
-		$is_header = $self->is_heading(line_ref=>\$para_lines[0],
-			next_ref=>\$para_lines[1]);
-	    }
-	    # Note that it is concievable that someone has
-	    # partially disabled mailmode by making a custom header
-	    # which matches the start of mail.
-	    # This is stupid, but allowable, so we check.
-	    if ($self->{mailmode}
-		&& !$is_table
-		&& !$is_custom_header) {
-		$is_mailheader = $self->is_mailheader(
-			rows_ref=>\@para_lines);
-	    }
+            my $is_table         = 0;
+            my $table_type       = 0;
+            my $is_mailheader    = 0;
+            my $is_header        = 0;
+            my $is_custom_header = 0;
+            if (@{$self->{custom_heading_regexp}})
+            {
+                $is_custom_header =
+                  $self->is_custom_heading(line => $para_lines[0]);
+            }
+            if (   $self->{make_tables}
+                && @para_lines > 1)
+            {
+                $table_type = $self->get_table_type(
+                    rows_ref => \@para_lines,
+                    para_len => $para_len
+                );
+                $is_table = ($table_type != 0);
+            }
+            if (   !$self->{explicit_headings}
+                && @para_lines > 1
+                && !$is_table)
+            {
+                $is_header = $self->is_heading(
+                    line_ref => \$para_lines[0],
+                    next_ref => \$para_lines[1]
+                );
+            }
+            # Note that it is concievable that someone has
+            # partially disabled mailmode by making a custom header
+            # which matches the start of mail.
+            # This is stupid, but allowable, so we check.
+            if (   $self->{mailmode}
+                && !$is_table
+                && !$is_custom_header)
+            {
+                $is_mailheader = $self->is_mailheader(rows_ref => \@para_lines);
+            }
 
-	    # end the list if we can end it
-	    if (($self->{__mode} & $LIST)
-		&& ($is_table || $is_mailheader
-		    || $is_header || $is_custom_header))
-	    {
-		my $list_end = '';
-		my $action = 0;
-		$self->endlist(num_lists=>$self->{__listnum},
-			prev_ref=>\$list_end,
-			line_action_ref=>\$action);
-		push @done_lines, $list_end;
-		$self->{__prev_para_action} |= $END;
-	    }
+            # end the list if we can end it
+            if (
+                ($self->{__mode} & $LIST)
+                && (   $is_table
+                    || $is_mailheader
+                    || $is_header
+                    || $is_custom_header)
+              )
+            {
+                my $list_end = '';
+                my $action   = 0;
+                $self->endlist(
+                    num_lists       => $self->{__listnum},
+                    prev_ref        => \$list_end,
+                    line_action_ref => \$action
+                );
+                push @done_lines, $list_end;
+                $self->{__prev_para_action} |= $END;
+            }
 
-	    # end the PRE if we can end it
-	    if (($self->{__mode} & $PRE)
-		&& !($self->{__mode} & $PRE_EXPLICIT)
-		&& ($is_table || $is_mailheader 
-		    || !$self->is_preformatted($para_lines[0]))
-		&& ($self->{preformat_trigger_lines} != 0))
-	    {
-		my $pre_end = '';
-		my $tag = $self->close_tag('PRE');
-		$pre_end = "${tag}\n";
-		$self->{__mode} ^= ($PRE & $self->{__mode});
-		push @done_lines, $pre_end;
-		$self->{__prev_para_action} |= $END;
-	    }
+            # end the PRE if we can end it
+            if (
+                   ($self->{__mode} & $PRE)
+                && !($self->{__mode} & $PRE_EXPLICIT)
+                && (   $is_table
+                    || $is_mailheader
+                    || !$self->is_preformatted($para_lines[0]))
+                && ($self->{preformat_trigger_lines} != 0)
+              )
+            {
+                my $pre_end = '';
+                my $tag     = $self->close_tag('PRE');
+                $pre_end = "${tag}\n";
+                $self->{__mode} ^= ($PRE & $self->{__mode});
+                push @done_lines, $pre_end;
+                $self->{__prev_para_action} |= $END;
+            }
 
-	    # The PRE and PRE_EXPLICIT structure can carry over
-	    # from one paragraph to the next, but because we don't
-	    # want trailing newlines, such newlines would have been
-	    # gotten rid of in the previous call.  However, with
-	    # a preformatted text, we do want the blank lines in it
-	    # to be preserved, so let's add a blank line in here.
-	    if ($self->{__mode} & $PRE) {
-		push @done_lines, "\n";
-	    }
+            # The PRE and PRE_EXPLICIT structure can carry over
+            # from one paragraph to the next, but because we don't
+            # want trailing newlines, such newlines would have been
+            # gotten rid of in the previous call.  However, with
+            # a preformatted text, we do want the blank lines in it
+            # to be preserved, so let's add a blank line in here.
+            if ($self->{__mode} & $PRE)
+            {
+                push @done_lines, "\n";
+            }
 
-	    # Now, we do certain things which are only found at the
-	    # start of a paragraph:
-	    # HEADER, custom-header, TABLE and MAILHEADER
-	    # These could concievably eat the rest of the paragraph.
+            # Now, we do certain things which are only found at the
+            # start of a paragraph:
+            # HEADER, custom-header, TABLE and MAILHEADER
+            # These could concievably eat the rest of the paragraph.
 
-	    if ($is_custom_header) {
-		# custom header eats the first line
-		my $header = shift @para_lines;
-		shift @para_line_len;
-		shift @para_line_indent;
-		shift @para_line_action;
-		$self->custom_heading(line_ref=>\$header);
-		push @done_lines, $header;
-		$self->{__prev_para_action} |= $HEADER;
-	    }
-	    elsif ($is_header) {
-		# normal header eats the first two lines
-		my $header = shift @para_lines;
-		shift @para_line_len;
-		shift @para_line_indent;
-		shift @para_line_action;
-		my $underline = shift @para_lines;
-		shift @para_line_len;
-		shift @para_line_indent;
-		shift @para_line_action;
-		$self->heading(line_ref=>\$header,
-			next_ref=>\$underline);
-		push @done_lines, $header;
-		$self->{__prev_para_action} |= $HEADER;
-	    }
+            if ($is_custom_header)
+            {
+                # custom header eats the first line
+                my $header = shift @para_lines;
+                shift @para_line_len;
+                shift @para_line_indent;
+                shift @para_line_action;
+                $self->custom_heading(line_ref => \$header);
+                push @done_lines, $header;
+                $self->{__prev_para_action} |= $HEADER;
+            }
+            elsif ($is_header)
+            {
+                # normal header eats the first two lines
+                my $header = shift @para_lines;
+                shift @para_line_len;
+                shift @para_line_indent;
+                shift @para_line_action;
+                my $underline = shift @para_lines;
+                shift @para_line_len;
+                shift @para_line_indent;
+                shift @para_line_action;
+                $self->heading(
+                    line_ref => \$header,
+                    next_ref => \$underline
+                );
+                push @done_lines, $header;
+                $self->{__prev_para_action} |= $HEADER;
+            }
 
-	    # do the table stuff on the array of lines
-	    if ($self->{make_tables} && $is_table) {
-		if ($self->tablestuff(
-			table_type=>$table_type,
-			rows_ref=>\@para_lines,
-			para_len=>$para_len))
-		{
-		    # this has used up all the lines
-		    push @done_lines, @para_lines;
-		    @para_lines = ();
-		}
-	    }
+            # do the table stuff on the array of lines
+            if ($self->{make_tables} && $is_table)
+            {
+                if (
+                    $self->tablestuff(
+                        table_type => $table_type,
+                        rows_ref   => \@para_lines,
+                        para_len   => $para_len
+                    )
+                  )
+                {
+                    # this has used up all the lines
+                    push @done_lines, @para_lines;
+                    @para_lines = ();
+                }
+            }
 
-	    # check of this para is a mail-header
-	    if ($is_mailheader
-		    && !($self->{__mode} & $TABLE)
-		    && @para_lines) {
-		$self->mailheader(
-			rows_ref=>\@para_lines);
-		# this has used up all the lines
-		push @done_lines, @para_lines;
-		@para_lines = ();
-	    }
+            # check of this para is a mail-header
+            if (   $is_mailheader
+                && !($self->{__mode} & $TABLE)
+                && @para_lines)
+            {
+                $self->mailheader(rows_ref => \@para_lines);
+                # this has used up all the lines
+                push @done_lines, @para_lines;
+                @para_lines = ();
+            }
 
-	    #
-	    # Now go through the paragraph lines one at a time
-	    # Note that we won't have TABLE, MAILHEADER, HEADER modes
-	    # because they would have eaten the lines
-	    #
-	    my $prev        = '';
-	    my $prev_action = $self->{__prev_para_action};
-	    for (my $i = 0 ; $i < @para_lines ; $i++) {
-		my $prev_ref;
-		my $prev_action_ref;
-		my $prev_line_indent;
-		my $prev_line_len;
-		if ($i == 0) {
-		    $prev_ref         = \$prev;
-		    $prev_action_ref  = \$prev_action;
-		    $prev_line_indent = 0;
-		    $prev_line_len    = 0;
-		}
-		else {
-		    $prev_ref         = \$para_lines[$i - 1];
-		    $prev_action_ref  = \$para_line_action[$i - 1];
-		    $prev_line_indent = $para_line_indent[$i - 1];
-		    $prev_line_len    = $para_line_len[$i - 1];
-		}
-		my $next_ref;
-		if ($i == $#para_lines) {
-		    $next_ref = undef;
-		}
-		else {
-		    $next_ref = \$para_lines[$i + 1];
-		}
+            #
+            # Now go through the paragraph lines one at a time
+            # Note that we won't have TABLE, MAILHEADER, HEADER modes
+            # because they would have eaten the lines
+            #
+            my $prev        = '';
+            my $prev_action = $self->{__prev_para_action};
+            for (my $i = 0; $i < @para_lines; $i++)
+            {
+                my $prev_ref;
+                my $prev_action_ref;
+                my $prev_line_indent;
+                my $prev_line_len;
+                if ($i == 0)
+                {
+                    $prev_ref         = \$prev;
+                    $prev_action_ref  = \$prev_action;
+                    $prev_line_indent = 0;
+                    $prev_line_len    = 0;
+                }
+                else
+                {
+                    $prev_ref         = \$para_lines[$i - 1];
+                    $prev_action_ref  = \$para_line_action[$i - 1];
+                    $prev_line_indent = $para_line_indent[$i - 1];
+                    $prev_line_len    = $para_line_len[$i - 1];
+                }
+                my $next_ref;
+                if ($i == $#para_lines)
+                {
+                    $next_ref = undef;
+                }
+                else
+                {
+                    $next_ref = \$para_lines[$i + 1];
+                }
 
-		$para_lines[$i] = escape($para_lines[$i])
-		    if ($self->{escape_HTML_chars});
+                $para_lines[$i] = escape($para_lines[$i])
+                  if ($self->{escape_HTML_chars});
 
-		if ($self->{mailmode}
-			&& !($self->{__mode} & ($PRE_EXPLICIT)))
-		{
-		    $self->mailquote(
-			    line_ref=>\$para_lines[$i],
-			    line_action_ref=>\$para_line_action[$i],
-			    prev_ref=>$prev_ref,
-			    prev_action_ref=>$prev_action_ref,
-			    next_ref=>$next_ref
-			    );
-		}
+                if ($self->{mailmode}
+                    && !($self->{__mode} & ($PRE_EXPLICIT)))
+                {
+                    $self->mailquote(
+                        line_ref        => \$para_lines[$i],
+                        line_action_ref => \$para_line_action[$i],
+                        prev_ref        => $prev_ref,
+                        prev_action_ref => $prev_action_ref,
+                        next_ref        => $next_ref
+                    );
+                }
 
-		if (($self->{__mode} & $PRE)
-			&& ($self->{preformat_trigger_lines} != 0))
-		{
-		    $self->endpreformat(
-			    para_lines_ref=>\@para_lines,
-			    para_action_ref=>\@para_line_action,
-			    ind=>$i,
-			    prev_ref=>$prev_ref);
-		}
+                if (   ($self->{__mode} & $PRE)
+                    && ($self->{preformat_trigger_lines} != 0))
+                {
+                    $self->endpreformat(
+                        para_lines_ref  => \@para_lines,
+                        para_action_ref => \@para_line_action,
+                        ind             => $i,
+                        prev_ref        => $prev_ref
+                    );
+                }
 
-		if (!($self->{__mode} & $PRE)) {
-		    $self->hrule(para_lines_ref=>\@para_lines,
-			    para_action_ref=>\@para_line_action,
-			    ind=>$i);
-		}
-		if (!($self->{__mode} & ($PRE))
-			&& ($para_lines[$i] !~ /^\s*$/))
-		{
-		    $self->liststuff(
-			    para_lines_ref=>\@para_lines,
-			    para_action_ref=>\@para_line_action,
-			    para_line_indent_ref=>\@para_line_indent,
-			    ind=>$i,
-			    prev_ref=>$prev_ref);
-		}
-		if (
-			!($para_line_action[$i] &
-			    ($HEADER | $LIST ))
-			&& !($self->{__mode} & ($LIST | $PRE))
-			&& $self->{__preformat_enabled})
-		{
-		    $self->preformat(
-			    mode_ref=>\$self->{__mode},
-			    line_ref=>\$para_lines[$i],
-			    line_action_ref=>\$para_line_action[$i],
-			    prev_ref=>$prev_ref,
-			    next_ref=>$next_ref,
-			    prev_action_ref=>$prev_action_ref
-			    );
-		}
-		if (!($self->{__mode} & ($PRE)))
-		{
-		    $self->paragraph(
-			    line_ref=>\$para_lines[$i],
-			    line_action_ref=>\$para_line_action[$i],
-			    prev_ref=>$prev_ref,
-			    prev_action_ref=>$prev_action_ref,
-			    line_indent=>$para_line_indent[$i],
-			    prev_indent=>$prev_line_indent,
-			    is_fragment=>$args{is_fragment},
-			    ind=>$i,
-			    );
-		}
-		if (!($self->{__mode} & ($PRE | $LIST)))
-		{
-		    $self->shortline(
-			    line_ref=>\$para_lines[$i],
-			    line_action_ref=>\$para_line_action[$i],
-			    prev_ref=>$prev_ref,
-			    prev_action_ref=>$prev_action_ref,
-			    prev_line_len=>$prev_line_len
-			    );
-		}
-		if (!($self->{__mode} & ($PRE))) {
-		    $self->caps(line_ref=>\$para_lines[$i],
-			    line_action_ref=>\$para_line_action[$i]);
-		}
+                if (!($self->{__mode} & $PRE))
+                {
+                    $self->hrule(
+                        para_lines_ref  => \@para_lines,
+                        para_action_ref => \@para_line_action,
+                        ind             => $i
+                    );
+                }
+                if (!($self->{__mode} & ($PRE))
+                    && ($para_lines[$i] !~ /^\s*$/))
+                {
+                    $self->liststuff(
+                        para_lines_ref       => \@para_lines,
+                        para_action_ref      => \@para_line_action,
+                        para_line_indent_ref => \@para_line_indent,
+                        ind                  => $i,
+                        prev_ref             => $prev_ref
+                    );
+                }
+                if (   !($para_line_action[$i] & ($HEADER | $LIST))
+                    && !($self->{__mode} & ($LIST | $PRE))
+                    && $self->{__preformat_enabled})
+                {
+                    $self->preformat(
+                        mode_ref        => \$self->{__mode},
+                        line_ref        => \$para_lines[$i],
+                        line_action_ref => \$para_line_action[$i],
+                        prev_ref        => $prev_ref,
+                        next_ref        => $next_ref,
+                        prev_action_ref => $prev_action_ref
+                    );
+                }
+                if (!($self->{__mode} & ($PRE)))
+                {
+                    $self->paragraph(
+                        line_ref        => \$para_lines[$i],
+                        line_action_ref => \$para_line_action[$i],
+                        prev_ref        => $prev_ref,
+                        prev_action_ref => $prev_action_ref,
+                        line_indent     => $para_line_indent[$i],
+                        prev_indent     => $prev_line_indent,
+                        is_fragment     => $args{is_fragment},
+                        ind             => $i,
+                    );
+                }
+                if (!($self->{__mode} & ($PRE | $LIST)))
+                {
+                    $self->shortline(
+                        line_ref        => \$para_lines[$i],
+                        line_action_ref => \$para_line_action[$i],
+                        prev_ref        => $prev_ref,
+                        prev_action_ref => $prev_action_ref,
+                        prev_line_len   => $prev_line_len
+                    );
+                }
+                if (!($self->{__mode} & ($PRE)))
+                {
+                    $self->caps(
+                        line_ref        => \$para_lines[$i],
+                        line_action_ref => \$para_line_action[$i]
+                    );
+                }
 
-		# put the "prev" line in front of the first line
-		$para_lines[$i] = $prev . $para_lines[$i]
-		    if ($i == 0 && ($prev !~ /^\s*$/));
-	    }
+                # put the "prev" line in front of the first line
+                $para_lines[$i] = $prev . $para_lines[$i]
+                  if ($i == 0 && ($prev !~ /^\s*$/));
+            }
 
-	    # para action is the action of the last line of the para
-	    $para_action = $para_line_action[$#para_line_action];
-	    $para_action = $NONE if (!defined $para_action);
+            # para action is the action of the last line of the para
+            $para_action = $para_line_action[$#para_line_action];
+            $para_action = $NONE if (!defined $para_action);
 
-	    # push them on the done lines
-	    push @done_lines, @para_lines;
-	    @para_lines = ();
+            # push them on the done lines
+            push @done_lines, @para_lines;
+            @para_lines = ();
 
-	}
-	# now put the para back together as one string
-	$para = join ('', @done_lines);
+        }
+        # now put the para back together as one string
+        $para = join('', @done_lines);
 
-	# if this is a paragraph, and we are in XHTML mode,
-	# close an open paragraph.
-	if ($self->{xhtml})
-	{
-	    my $open_tag = @{$self->{__tags}}[$#{$self->{__tags}}];
-	    if (defined $open_tag && $open_tag eq 'P')
-	    {
-		$para .= $self->close_tag('P');
-	    }
-	}
+        # if this is a paragraph, and we are in XHTML mode,
+        # close an open paragraph.
+        if ($self->{xhtml})
+        {
+            my $open_tag = @{$self->{__tags}}[$#{$self->{__tags}}];
+            if (defined $open_tag && $open_tag eq 'P')
+            {
+                $para .= $self->close_tag('P');
+            }
+        }
 
-        if ($self->{unhyphenation}
+        if (
+            $self->{unhyphenation}
 
             # ends in hyphen & next line starts w/letters
-            && ($para =~ /[^\W\d_]\-\n\s*[^\W\d_]/s)
-            && !($self->{__mode} &
-                ($PRE | $HEADER | $MAILHEADER | $TABLE | $BREAK))
+            && ($para =~ /[^\W\d_]\-\n\s*[^\W\d_]/s) && !(
+                $self->{__mode} &
+                ($PRE | $HEADER | $MAILHEADER | $TABLE | $BREAK)
+            )
           )
         {
             $self->unhyphenate_para(\$para);
         }
-	# chop trailing newlines for continuing lists and PRE
-	if ($self->{__mode} & $LIST
-	    || $self->{__mode} & $PRE)
-	{
-	    $para =~ s/\n$//g;
-	}
+        # chop trailing newlines for continuing lists and PRE
+        if (   $self->{__mode} & $LIST
+            || $self->{__mode} & $PRE)
+        {
+            $para =~ s/\n$//g;
+        }
     }
 
     # apply links and bold/italic formatting
     if ($para !~ /^\s*$/)
     {
-	$self->apply_links(para_ref=>\$para,
-	    para_action_ref=>\$para_action);
+        $self->apply_links(
+            para_ref        => \$para,
+            para_action_ref => \$para_action
+        );
     }
 
     # close any open lists if required to
-    if ($args{close_tags}
-	&& $self->{__mode} & $LIST)    # End all lists
+    if (   $args{close_tags}
+        && $self->{__mode} & $LIST)    # End all lists
     {
-	$self->endlist(num_lists=>$self->{__listnum},
-			prev_ref=>\$para,
-			line_action_ref=>\$para_action);
+        $self->endlist(
+            num_lists       => $self->{__listnum},
+            prev_ref        => \$para,
+            line_action_ref => \$para_action
+        );
     }
     # close any open tags
     if ($args{close_tags} && $self->{xhtml})
     {
-	while (@{$self->{__tags}})
-	{
-	    $para .= $self->close_tag('');
-	}
+        while (@{$self->{__tags}})
+        {
+            $para .= $self->close_tag('');
+        }
     }
 
     # convert remaining Microsoft character codes into sensible HTML
-    if ($self->{demoronize}) {
-	$para = demoronize_code($para);
+    if ($self->{demoronize})
+    {
+        $para = demoronize_code($para);
     }
-    # All the matching and formatting is done.  Now we can 
+    # All the matching and formatting is done.  Now we can
     # replace non-ASCII characters with character entities.
-    if (!$self->{eight_bit_clean}) {
-        my @chars = split (//, $para);
-        foreach $_ (@chars) {
+    if (!$self->{eight_bit_clean})
+    {
+        my @chars = split(//, $para);
+        foreach $_ (@chars)
+        {
             $_ = $char_entities{$_} if defined($char_entities{$_});
         }
-        $para = join ('', @chars);
+        $para = join('', @chars);
     }
 
     $self->{__prev_para_action} = $para_action;
 
     return $para;
-} # process_para
+}    # process_para
 
 =head2 txt2html
 
@@ -1530,122 +1667,195 @@ the arguments.  Arguments which have already been set with B<new> or
 B<args> will remain as they are, unless they are overridden.
 
 =cut
-sub txt2html ($;$) {
-    my $self     = shift;
 
-    if (@_) {
-	$self->args(@_);
+sub txt2html ($;$)
+{
+    my $self = shift;
+
+    if (@_)
+    {
+        $self->args(@_);
     }
 
     $self->do_init_call();
 
     my $outhandle;
-    my $not_to_stdout;
+    my $outhandle_needs_closing;
 
-    # open the output
-    if ($self->{outfile} eq "-") {
-        $outhandle     = *STDOUT;
-        $not_to_stdout = 0;
+    # set up the output
+    if ($self->{outhandle})
+    {
+        $outhandle               = $self->{outhandle};
+        $outhandle_needs_closing = 1;
     }
-    else {
-        open(HOUT, "> " . $self->{outfile}) || die "Error: unable to open ",
-          $self->{outfile}, ": $!\n";
-        $outhandle     = *HOUT;
-        $not_to_stdout = 1;
+    elsif ($self->{outfile} eq "-")
+    {
+        $outhandle               = *STDOUT;
+        $outhandle_needs_closing = 0;
+    }
+    else
+    {
+        open($outhandle, "> " . $self->{outfile})
+          || die "Error: unable to open ", $self->{outfile}, ": $!\n";
+        $outhandle_needs_closing = 1;
     }
 
     # slurp up a paragraph at a time, a file at a time
     local $/ = "";
-    my $para  = '';
-    my $count = 0;
+    my $para        = '';
+    my $count       = 0;
     my $print_count = 0;
+    my @sources     = ();
+    my $source_type;
+    if ($self->{infile} and @{$self->{infile}})
+    {
+        @sources     = @{$self->{infile}};
+        $source_type = 'file';
+    }
+    elsif ($self->{inhandle} and @{$self->{inhandle}})
+    {
+        @sources     = @{$self->{inhandle}};
+        $source_type = 'filehandle';
+    }
+    elsif ($self->{instring} and @{$self->{instring}})
+    {
+        @sources     = @{$self->{instring}};
+        $source_type = 'string';
+    }
     my $inhandle;
-    foreach my $file (@{$self->{infile}}) {
-        if ((-f $file && open(IN, $file))
-	    || $file eq '-' ) {
-	    if ($file eq '-') { # stdin
-		$inhandle = *STDIN;
-	    }
-	    else {
-		$inhandle = *IN;
-	    }
-            while (<$inhandle>) {
+    my $inhandle_needs_closing = 0;
+    foreach my $source (@sources)
+    {
+        $inhandle = undef;
+        if ($source_type eq 'file')
+        {
+            if (!$source or $source eq '-')
+            {
+                $inhandle               = *STDIN;
+                $inhandle_needs_closing = 0;
+            }
+            else
+            {
+                if (-f $source && open($inhandle, $source))
+                {
+                    $inhandle_needs_closing = 1;
+                }
+                else    # error
+                {
+                    warn "Could not open $source\n";
+                    next;
+                }
+            }
+        }
+        elsif ($source_type eq 'filehandle')
+        {
+            $inhandle               = $source;
+            $inhandle_needs_closing = 1;
+        }
+        if ($source_type eq 'string')
+        {
+            # process the string
+            $para = $_;
+            $para =~ s/\n$//;    # trim the endline
+            if ($count == 0)
+            {
+                $self->do_file_start($outhandle, $para);
+            }
+            $self->{__done_with_sect_link} = [];
+            $para = $self->process_chunk($para, close_tags => 0);
+            print $outhandle $para, "\n";
+            $print_count++;
+            $count++;
+        }
+        else                     # file or filehandle
+        {
+            while (<$inhandle>)
+            {
                 $para = $_;
                 $para =~ s/\n$//;    # trim the endline
-                if ($count == 0) {
+                if ($count == 0)
+                {
                     $self->do_file_start($outhandle, $para);
                 }
-		$self->{__done_with_sect_link} = [];
-                $para = $self->process_chunk($para, 
-		    close_tags=>0);
+                $self->{__done_with_sect_link} = [];
+                $para = $self->process_chunk($para, close_tags => 0);
                 print $outhandle $para, "\n";
                 $print_count++;
                 $count++;
             }
-	    if ($file ne '-') { # not stdin
-		close(IN);
-	    }
+            if ($inhandle_needs_closing)
+            {
+                close($inhandle);
+            }
         }
-    }
+    }    # for each file
 
     $self->{__prev} = "";
     if ($self->{__mode} & $LIST)    # End all lists
     {
-	$self->endlist(num_lists=>$self->{__listnum},
-			prev_ref=>\$self->{__prev},
-			line_action_ref=>\$self->{__line_action})
+        $self->endlist(
+            num_lists       => $self->{__listnum},
+            prev_ref        => \$self->{__prev},
+            line_action_ref => \$self->{__line_action}
+        );
     }
     print $outhandle $self->{__prev};
 
     # end open preformats
     if ($self->{__mode} & $PRE)
     {
-	my $tag = $self->close_tag('PRE');
-	print $outhandle $tag;
+        my $tag = $self->close_tag('PRE');
+        print $outhandle $tag;
     }
 
     # close all open tags
-    if ($self->{xhtml}
-	&& !$self->{extract}
-	&& @{$self->{__tags}})
+    if (   $self->{xhtml}
+        && !$self->{extract}
+        && @{$self->{__tags}})
     {
-	if ($self->{dict_debug} & 8)
-	{
-	    print STDERR "closing all tags at end\n";
-	}
-	# close any open tags (until we get to the body)
-	my $open_tag = @{$self->{__tags}}[$#{$self->{__tags}}];
-	while (@{$self->{__tags}}
-	    && $open_tag ne 'BODY'
-	    && $open_tag ne 'HTML')
-	{
-	    print $outhandle $self->close_tag('');
-	    $open_tag = @{$self->{__tags}}[$#{$self->{__tags}}];
-	}
-	print $outhandle "\n";
+        if ($self->{dict_debug} & 8)
+        {
+            print STDERR "closing all tags at end\n";
+        }
+        # close any open tags (until we get to the body)
+        my $open_tag = @{$self->{__tags}}[$#{$self->{__tags}}];
+        while (@{$self->{__tags}}
+            && $open_tag ne 'BODY'
+            && $open_tag ne 'HTML')
+        {
+            print $outhandle $self->close_tag('');
+            $open_tag = @{$self->{__tags}}[$#{$self->{__tags}}];
+        }
+        print $outhandle "\n";
     }
 
-    if ($self->{append_file}) {
-        if (-r $self->{append_file}) {
+    if ($self->{append_file})
+    {
+        if (-r $self->{append_file})
+        {
             open(APPEND, $self->{append_file});
-            while (<APPEND>) {
+            while (<APPEND>)
+            {
                 print $outhandle $_;
-		$print_count++;
+                $print_count++;
             }
             close(APPEND);
         }
-        else {
+        else
+        {
             print STDERR "Can't find or read file ", $self->{append_file},
               " to append.\n";
         }
     }
 
     # print the closing tags (if we have printed stuff at all)
-    if ($print_count && !$self->{extract}) {
+    if ($print_count && !$self->{extract})
+    {
         print $outhandle $self->close_tag('BODY'), "\n";
         print $outhandle $self->close_tag('HTML'), "\n";
     }
-    if ($not_to_stdout) {
+    if ($outhandle_needs_closing)
+    {
         close($outhandle);
     }
     return 1;
@@ -1658,7 +1868,8 @@ sub txt2html ($;$) {
 # Name: init_our_data
 # Args:
 #   $self
-sub init_our_data ($) {
+sub init_our_data ($)
+{
     my $self = shift;
 
     $self->{debug} = 0;
@@ -1666,79 +1877,81 @@ sub init_our_data ($) {
     #
     # All the options, in alphabetical order
     #
-    $self->{append_file} = '';
-    $self->{append_head} = '';
-    $self->{body_deco} = '';
-    $self->{bullets} = '-=o*\267';
-    $self->{bullets_ordered} = '';
-    $self->{bold_delimiter} = '#';
-    $self->{caps_tag} = 'STRONG';
+    $self->{append_file}           = '';
+    $self->{append_head}           = '';
+    $self->{body_deco}             = '';
+    $self->{bullets}               = '-=o*\267';
+    $self->{bullets_ordered}       = '';
+    $self->{bold_delimiter}        = '#';
+    $self->{caps_tag}              = 'STRONG';
     $self->{custom_heading_regexp} = [];
-    $self->{default_link_dict} = ($ENV{HOME}
-    	? "$ENV{HOME}/.txt2html.dict" : '.txt2html.dict');
-    $self->{dict_debug} = 0;
-    $self->{doctype} = "-//W3C//DTD HTML 3.2 Final//EN";
-    $self->{demoronize} = 1;
-    $self->{eight_bit_clean} = 0;
-    $self->{escape_HTML_chars} = 1;
-    $self->{explicit_headings} = 0;
-    $self->{extract} = 0;
-    $self->{hrule_min} = 4;
-    $self->{indent_width} = 2;
-    $self->{indent_par_break} = 0;
-    $self->{infile} = [];
-    $self->{italic_delimiter} = '*';
-    $self->{links_dictionaries} = [];
-    $self->{link_only} = 0;
-    $self->{lower_case_tags} = 0;
-    $self->{mailmode} = 0;
-    $self->{make_anchors} = 1;
-    $self->{make_links} = 1;
-    $self->{make_tables} = 0;
-    $self->{min_caps_length} = 3;
-    $self->{outfile} = '-';
-    $self->{par_indent} = 2;
-    $self->{preformat_trigger_lines} = 2;
+    $self->{default_link_dict}     =
+      ($ENV{HOME} ? "$ENV{HOME}/.txt2html.dict" : '.txt2html.dict');
+    $self->{dict_debug}                 = 0;
+    $self->{doctype}                    = "-//W3C//DTD HTML 3.2 Final//EN";
+    $self->{demoronize}                 = 1;
+    $self->{eight_bit_clean}            = 0;
+    $self->{escape_HTML_chars}          = 1;
+    $self->{explicit_headings}          = 0;
+    $self->{extract}                    = 0;
+    $self->{hrule_min}                  = 4;
+    $self->{indent_width}               = 2;
+    $self->{indent_par_break}           = 0;
+    $self->{infile}                     = [];
+    $self->{inhandle}                   = [];
+    $self->{instring}                   = [];
+    $self->{italic_delimiter}           = '*';
+    $self->{links_dictionaries}         = [];
+    $self->{link_only}                  = 0;
+    $self->{lower_case_tags}            = 0;
+    $self->{mailmode}                   = 0;
+    $self->{make_anchors}               = 1;
+    $self->{make_links}                 = 1;
+    $self->{make_tables}                = 0;
+    $self->{min_caps_length}            = 3;
+    $self->{outfile}                    = '-';
+    $self->{par_indent}                 = 2;
+    $self->{preformat_trigger_lines}    = 2;
     $self->{endpreformat_trigger_lines} = 2;
-    $self->{preformat_start_marker} = "^(:?(:?&lt;)|<)PRE(:?(:?&gt;)|>)\$";
-    $self->{preformat_end_marker} = "^(:?(:?&lt;)|<)/PRE(:?(:?&gt;)|>)\$";
-    $self->{preformat_whitespace_min} = 5;
-    $self->{prepend_file} = '';
-    $self->{preserve_indent} = 0;
-    $self->{short_line_length} = 40;
-    $self->{style_url} = '';
-    $self->{tab_width} = 8;
-    $self->{table_type} = {
-	ALIGN => 1,
-	PGSQL => 1,
-	BORDER => 1,
-	DELIM => 1,
+    $self->{preformat_start_marker}     = "^(:?(:?&lt;)|<)PRE(:?(:?&gt;)|>)\$";
+    $self->{preformat_end_marker}       = "^(:?(:?&lt;)|<)/PRE(:?(:?&gt;)|>)\$";
+    $self->{preformat_whitespace_min}   = 5;
+    $self->{prepend_file}               = '';
+    $self->{preserve_indent}            = 0;
+    $self->{short_line_length}          = 40;
+    $self->{style_url}                  = '';
+    $self->{tab_width}                  = 8;
+    $self->{table_type}                 = {
+        ALIGN  => 1,
+        PGSQL  => 1,
+        BORDER => 1,
+        DELIM  => 1,
     };
-    $self->{title} = '';
-    $self->{titlefirst} = 0;
+    $self->{title}                      = '';
+    $self->{titlefirst}                 = 0;
     $self->{underline_length_tolerance} = 1;
     $self->{underline_offset_tolerance} = 1;
-    $self->{unhyphenation} = 1;
-    $self->{use_mosaic_header} = 0;
-    $self->{use_preformat_marker} = 0;
-    $self->{xhtml} = 0;
+    $self->{unhyphenation}              = 1;
+    $self->{use_mosaic_header}          = 0;
+    $self->{use_preformat_marker}       = 0;
+    $self->{xhtml}                      = 0;
 
     # accumulation variables
-    $self->{__file} = "";    # Current file being processed
+    $self->{__file}               = "";    # Current file being processed
     $self->{__heading_styles}     = {};
     $self->{__num_heading_styles} = 0;
-    $self->{__links_table} = {};
-    $self->{__links_table_order} = [];
-    $self->{__search_patterns} = [];
-    $self->{__repl_code}        = [];
-    $self->{__prev_para_action} = 0;
-    $self->{__non_header_anchor} = 0;
-    $self->{__mode}              = 0;
-    $self->{__listnum}           = 0;
-    $self->{__list_nice_indent}       = "";
-    $self->{__list_indent}	= [];
+    $self->{__links_table}        = {};
+    $self->{__links_table_order}  = [];
+    $self->{__search_patterns}    = [];
+    $self->{__repl_code}          = [];
+    $self->{__prev_para_action}   = 0;
+    $self->{__non_header_anchor}  = 0;
+    $self->{__mode}               = 0;
+    $self->{__listnum}            = 0;
+    $self->{__list_nice_indent}   = "";
+    $self->{__list_indent}        = [];
 
-    $self->{__call_init_done}    = 0;
+    $self->{__call_init_done} = 0;
 
     #
     # The global links data
@@ -1752,18 +1965,18 @@ sub init_our_data ($) {
     # This also means that we don't close it, either.  Hope that doesn't
     # cause a problem...
     #
-    my $curpos = tell(DATA); # remember the __DATA__ position
-    my @lines = ();
+    my $curpos = tell(DATA);    # remember the __DATA__ position
+    my @lines  = ();
     while (<DATA>)
     {
-	# skip lines that start with '#'
-	next if /^\#/;          
-	# skip lines that end with unescaped ':'
-	next if /^.*[^\\]:\s*$/;
-	push @lines, $_;
+        # skip lines that start with '#'
+        next if /^\#/;
+        # skip lines that end with unescaped ':'
+        next if /^.*[^\\]:\s*$/;
+        push @lines, $_;
     }
     # reset the data handle to the start, just in case
-    seek(DATA,$curpos,0);
+    seek(DATA, $curpos, 0);
     $self->{__global_links_data} = join('', @lines);
 }    # init_our_data
 
@@ -1775,47 +1988,60 @@ sub init_our_data ($) {
 #   do extra processing related to particular options
 # Args:
 #   $self
-sub deal_with_options ($) {
+sub deal_with_options ($)
+{
     my $self = shift;
 
-    if ($self->{links_dictionaries}) {
-	# only put into the links dictionaries files which are readable
-	my @dict_files = @{$self->{links_dictionaries}};
-	$self->args(links_dictionaries=>[]);
+    if ($self->{links_dictionaries})
+    {
+        # only put into the links dictionaries files which are readable
+        my @dict_files = @{$self->{links_dictionaries}};
+        $self->args(links_dictionaries => []);
 
-        foreach my $ld (@dict_files) {
-            if (-r $ld) {
+        foreach my $ld (@dict_files)
+        {
+            if (-r $ld)
+            {
                 $self->{'make_links'} = 1;
-		$self->args(['--links_dictionaries', $ld]);
+                $self->args(['--links_dictionaries', $ld]);
             }
-            else {
+            else
+            {
                 print STDERR "Can't find or read link-file $ld\n";
             }
         }
     }
-    if (!$self->{make_links}) {
+    if (!$self->{make_links})
+    {
         $self->{'links_dictionaries'} = 0;
     }
-    if ($self->{append_file}) {
-        if (!-r $self->{append_file}) {
+    if ($self->{append_file})
+    {
+        if (!-r $self->{append_file})
+        {
             print STDERR "Can't find or read ", $self->{append_file}, "\n";
-	    $self->{append_file} = '';
+            $self->{append_file} = '';
         }
     }
-    if ($self->{prepend_file}) {
-        if (!-r $self->{prepend_file}) {
+    if ($self->{prepend_file})
+    {
+        if (!-r $self->{prepend_file})
+        {
             print STDERR "Can't find or read ", $self->{prepend_file}, "\n";
-	    $self->{'prepend_file'} = '';
+            $self->{'prepend_file'} = '';
         }
     }
-    if ($self->{append_head}) {
-        if (!-r $self->{append_head}) {
+    if ($self->{append_head})
+    {
+        if (!-r $self->{append_head})
+        {
             print STDERR "Can't find or read ", $self->{append_head}, "\n";
-	    $self->{'append_head'} = '';
+            $self->{'append_head'} = '';
         }
     }
 
-    if (!$self->{outfile}) {
+    if (!$self->{outfile})
+    {
         $self->{'outfile'} = "-";
     }
 
@@ -1833,17 +2059,18 @@ sub deal_with_options ($) {
 
     $self->{__preformat_enabled} =
       (($self->{endpreformat_trigger_lines} != 0)
-      || $self->{use_preformat_marker});
+          || $self->{use_preformat_marker});
 
-    if ($self->{use_mosaic_header}) {
+    if ($self->{use_mosaic_header})
+    {
         my $num_heading_styles = 0;
         my %heading_styles     = ();
-        $heading_styles{"*"} = ++$num_heading_styles;
-        $heading_styles{"="} = ++$num_heading_styles;
-        $heading_styles{"+"} = ++$num_heading_styles;
-        $heading_styles{"-"} = ++$num_heading_styles;
-        $heading_styles{"~"} = ++$num_heading_styles;
-        $heading_styles{"."} = ++$num_heading_styles;
+        $heading_styles{"*"}          = ++$num_heading_styles;
+        $heading_styles{"="}          = ++$num_heading_styles;
+        $heading_styles{"+"}          = ++$num_heading_styles;
+        $heading_styles{"-"}          = ++$num_heading_styles;
+        $heading_styles{"~"}          = ++$num_heading_styles;
+        $heading_styles{"."}          = ++$num_heading_styles;
         $self->{__heading_styles}     = \%heading_styles;
         $self->{__num_heading_styles} = $num_heading_styles;
     }
@@ -1851,7 +2078,8 @@ sub deal_with_options ($) {
     $self->{'lower_case_tags'} = 1 if ($self->{xhtml});
 }
 
-sub escape ($) {
+sub escape ($)
+{
     my ($text) = @_;
     $text =~ s/&/&amp;/g;
     $text =~ s/>/&gt;/g;
@@ -1862,7 +2090,8 @@ sub escape ($) {
 #     Added by Alan Jackson, alan at ajackson dot org, and based
 #     on the demoronize script by John Walker, http://www.fourmilab.ch/
 # Convert Microsoft character entities into characters.
-sub demoronize_char($) {
+sub demoronize_char($)
+{
     my $s = shift;
     #   Map strategically incompatible non-ISO characters in the
     #   range 0x82 -- 0x9F into plausible substitutes where
@@ -1892,7 +2121,8 @@ sub demoronize_char($) {
 }
 
 # convert Microsoft character entities into HTML code
-sub demoronize_code($) {
+sub demoronize_code($)
+{
     my $s = shift;
     #   Map strategically incompatible non-ISO characters in the
     #   range 0x82 -- 0x9F into plausible substitutes where
@@ -1913,20 +2143,21 @@ sub demoronize_code($) {
 #   tag_type=>'start' | tag_type=>'end' | tag_type=>'empty'
 #   (default start)
 #   inside_tag=>string (default empty)
-sub get_tag ($$;%) {
-    my $self	    = shift;
-    my $in_tag	    = shift;
-    my %args = (
-	tag_type=>'start',
-	inside_tag=>'',
-	@_
+sub get_tag ($$;%)
+{
+    my $self   = shift;
+    my $in_tag = shift;
+    my %args   = (
+        tag_type   => 'start',
+        inside_tag => '',
+        @_
     );
-    my $inside_tag  = $args{inside_tag};
+    my $inside_tag = $args{inside_tag};
 
     my $open_tag = @{$self->{__tags}}[$#{$self->{__tags}}];
     if (!defined $open_tag)
     {
-	$open_tag = '';
+        $open_tag = '';
     }
     # close any open tags that need closing
     # Note that we only have to check for the structural tags we make,
@@ -1934,155 +2165,170 @@ sub get_tag ($$;%) {
     my $tag_prefix = '';
     if ($self->{xhtml})
     {
-	if ($open_tag eq 'P' and $in_tag eq 'P'
-	    and $args{tag_type} ne 'end')
-	{
-	    $tag_prefix = $self->close_tag('P');
-	}
-	elsif ($open_tag eq 'P'
-	    and $in_tag =~ /^(HR|UL|OL|DL|PRE|TABLE|H)/)
-	{
-	    $tag_prefix = $self->close_tag('P');
-	}
-	elsif ($open_tag eq 'LI' and $in_tag eq 'LI'
-	    and $args{tag_type} ne 'end')
-	{
-	    # close a LI before the next LI
-	    $tag_prefix = $self->close_tag('LI');
-	}
-	elsif ($open_tag eq 'LI' and $in_tag =~ /^(UL|OL)$/
-	    and $args{tag_type} eq 'end')
-	{
-	    # close the LI before the list closes
-	    $tag_prefix = $self->close_tag('LI');
-	}
-	elsif ($open_tag eq 'DT' and $in_tag eq 'DD'
-	    and $args{tag_type} ne 'end')
-	{
-	    # close a DT before the next DD
-	    $tag_prefix = $self->close_tag('DT');
-	}
-	elsif ($open_tag eq 'DD' and $in_tag eq 'DT'
-	    and $args{tag_type} ne 'end')
-	{
-	    # close a DD before the next DT
-	    $tag_prefix = $self->close_tag('DD');
-	}
-	elsif ($open_tag eq 'DD' and $in_tag eq 'DL'
-	    and $args{tag_type} eq 'end')
-	{
-	    # close the DD before the list closes
-	    $tag_prefix = $self->close_tag('DD');
-	}
+        if (    $open_tag eq 'P'
+            and $in_tag eq 'P'
+            and $args{tag_type} ne 'end')
+        {
+            $tag_prefix = $self->close_tag('P');
+        }
+        elsif ( $open_tag eq 'P'
+            and $in_tag =~ /^(HR|UL|OL|DL|PRE|TABLE|H)/)
+        {
+            $tag_prefix = $self->close_tag('P');
+        }
+        elsif ( $open_tag eq 'LI'
+            and $in_tag eq 'LI'
+            and $args{tag_type} ne 'end')
+        {
+            # close a LI before the next LI
+            $tag_prefix = $self->close_tag('LI');
+        }
+        elsif ( $open_tag eq 'LI'
+            and $in_tag =~ /^(UL|OL)$/
+            and $args{tag_type} eq 'end')
+        {
+            # close the LI before the list closes
+            $tag_prefix = $self->close_tag('LI');
+        }
+        elsif ( $open_tag eq 'DT'
+            and $in_tag eq 'DD'
+            and $args{tag_type} ne 'end')
+        {
+            # close a DT before the next DD
+            $tag_prefix = $self->close_tag('DT');
+        }
+        elsif ( $open_tag eq 'DD'
+            and $in_tag eq 'DT'
+            and $args{tag_type} ne 'end')
+        {
+            # close a DD before the next DT
+            $tag_prefix = $self->close_tag('DD');
+        }
+        elsif ( $open_tag eq 'DD'
+            and $in_tag         eq 'DL'
+            and $args{tag_type} eq 'end')
+        {
+            # close the DD before the list closes
+            $tag_prefix = $self->close_tag('DD');
+        }
     }
 
     my $out_tag = $in_tag;
     if ($args{tag_type} eq 'end')
     {
-	$out_tag = $self->close_tag($in_tag);
+        $out_tag = $self->close_tag($in_tag);
     }
     else
     {
-	if ($self->{lower_case_tags})
-	{
-	    $out_tag =~ tr/A-Z/a-z/;
-	}
-	else # upper case
-	{
-	    $out_tag =~ tr/a-z/A-Z/;
-	}
-	if ($args{tag_type} eq 'empty')
-	{
-	    if ($self->{xhtml})
-	    {
-		$out_tag = "<${out_tag}${inside_tag}/>";
-	    }
-	    else
-	    {
-		$out_tag = "<${out_tag}${inside_tag}>";
-	    }
-	}
-	else
-	{
-	    push @{$self->{__tags}}, $in_tag;
-	    $out_tag = "<${out_tag}${inside_tag}>";
-	}
+        if ($self->{lower_case_tags})
+        {
+            $out_tag =~ tr/A-Z/a-z/;
+        }
+        else    # upper case
+        {
+            $out_tag =~ tr/a-z/A-Z/;
+        }
+        if ($args{tag_type} eq 'empty')
+        {
+            if ($self->{xhtml})
+            {
+                $out_tag = "<${out_tag}${inside_tag}/>";
+            }
+            else
+            {
+                $out_tag = "<${out_tag}${inside_tag}>";
+            }
+        }
+        else
+        {
+            push @{$self->{__tags}}, $in_tag;
+            $out_tag = "<${out_tag}${inside_tag}>";
+        }
     }
     $out_tag = $tag_prefix . $out_tag if $tag_prefix;
     if ($self->{dict_debug} & 8)
     {
-	print STDERR "open_tag = '${open_tag}', in_tag = '${in_tag}', tag_type = ", $args{tag_type}, ", inside_tag = '${inside_tag}', out_tag = '$out_tag'\n";
+        print STDERR
+          "open_tag = '${open_tag}', in_tag = '${in_tag}', tag_type = ",
+          $args{tag_type},
+          ", inside_tag = '${inside_tag}', out_tag = '$out_tag'\n";
     }
 
     return $out_tag;
-} # get_tag
+}    # get_tag
 
 # close the open tag
-sub close_tag ($$) {
-    my $self	    = shift;
-    my $in_tag	    = shift;
+sub close_tag ($$)
+{
+    my $self   = shift;
+    my $in_tag = shift;
 
     my $open_tag = pop @{$self->{__tags}};
     $in_tag ||= $open_tag;
     # put the open tag back on the stack if the in-tag is not the same
     if (defined $open_tag && $open_tag ne $in_tag)
     {
-	push @{$self->{__tags}}, $open_tag;
+        push @{$self->{__tags}}, $open_tag;
     }
     my $out_tag = $in_tag;
     if ($self->{lower_case_tags})
     {
-	$out_tag =~ tr/A-Z/a-z/;
+        $out_tag =~ tr/A-Z/a-z/;
     }
-    else # upper case
+    else    # upper case
     {
-	$out_tag =~ tr/a-z/A-Z/;
+        $out_tag =~ tr/a-z/A-Z/;
     }
     $out_tag = "<\/${out_tag}>";
     if ($self->{dict_debug} & 8)
     {
-	print STDERR "close_tag: open_tag = '${open_tag}', in_tag = '${in_tag}', out_tag = '$out_tag'\n";
+        print STDERR
+"close_tag: open_tag = '${open_tag}', in_tag = '${in_tag}', out_tag = '$out_tag'\n";
     }
 
     return $out_tag;
 }
 
-sub hrule ($%) {
-    my $self            = shift;
+sub hrule ($%)
+{
+    my $self = shift;
     my %args = (
-	para_lines_ref=>undef,
-	para_action_ref=>undef,
-	ind=>0,
-	@_
-	);
+        para_lines_ref  => undef,
+        para_action_ref => undef,
+        ind             => 0,
+        @_
+    );
     my $para_lines_ref  = $args{para_lines_ref};
     my $para_action_ref = $args{para_action_ref};
-    my $ind		= $args{ind};
+    my $ind             = $args{ind};
 
     my $hrmin = $self->{hrule_min};
-    if ($para_lines_ref->[$ind] =~ /^\s*([-_~=\*]\s*){$hrmin,}$/) {
-	my $tag = $self->get_tag("HR", tag_type=>'empty');
+    if ($para_lines_ref->[$ind] =~ /^\s*([-_~=\*]\s*){$hrmin,}$/)
+    {
+        my $tag = $self->get_tag("HR", tag_type => 'empty');
         $para_lines_ref->[$ind] = "$tag\n";
-	$para_action_ref->[$ind] |= $HRULE;
+        $para_action_ref->[$ind] |= $HRULE;
     }
-    elsif ($para_lines_ref->[$ind] =~ /\014/) {
-	# Linefeeds become horizontal rules
-	$para_action_ref->[$ind] |= $HRULE;
-	my $tag = $self->get_tag("HR", tag_type=>'empty');
+    elsif ($para_lines_ref->[$ind] =~ /\014/)
+    {
+        # Linefeeds become horizontal rules
+        $para_action_ref->[$ind] |= $HRULE;
+        my $tag = $self->get_tag("HR", tag_type => 'empty');
         $para_lines_ref->[$ind] =~ s/\014/\n${tag}\n/g;
     }
 }
 
-sub shortline ($%) {
-    my $self            = shift;
+sub shortline ($%)
+{
+    my $self = shift;
     my %args = (
-	line_ref=>undef,
-	line_action_ref=>undef,
-	prev_ref=>undef,
-	prev_action_ref=>undef,
-	prev_line_len=>0,
-	@_
-	);
+        line_ref        => undef,
+        line_action_ref => undef,
+        prev_ref        => undef,
+        prev_action_ref => undef,
+        prev_line_len   => 0,
+        @_
+    );
     my $mode_ref        = $args{mode_ref};
     my $line_ref        = $args{line_ref};
     my $line_action_ref = $args{line_action_ref};
@@ -2095,23 +2341,29 @@ sub shortline ($%) {
     # that yet.  For now, I'll just not break on short lines in lists.
     # (sorry)
 
-    my $tag = $self->get_tag('BR', tag_type=>'empty');
-    if (${$line_ref} !~ /^\s*$/
+    my $tag = $self->get_tag('BR', tag_type => 'empty');
+    if (
+           ${$line_ref} !~ /^\s*$/
         && ${$prev_ref} !~ /^\s*$/
         && ($prev_line_len < $self->{short_line_length})
-        && !(${$line_action_ref} & ($END | $HEADER | $HRULE | $LIST | $IND_BREAK| $PAR))
-        && !(${$prev_action_ref} & ($HEADER | $HRULE | $BREAK | $IND_BREAK)))
+        && !(
+            ${$line_action_ref} &
+            ($END | $HEADER | $HRULE | $LIST | $IND_BREAK | $PAR)
+        )
+        && !(${$prev_action_ref} & ($HEADER | $HRULE | $BREAK | $IND_BREAK))
+      )
     {
         ${$prev_ref} .= $tag . chop(${$prev_ref});
         ${$prev_action_ref} |= $BREAK;
     }
 }
 
-sub is_mailheader ($%) {
-    my $self     = shift;
+sub is_mailheader ($%)
+{
+    my $self = shift;
     my %args = (
-	rows_ref=>undef,
-	@_
+        rows_ref => undef,
+        @_
     );
     my $rows_ref = $args{rows_ref};
 
@@ -2120,65 +2372,69 @@ sub is_mailheader ($%) {
 
     if ($rows_ref->[0] =~ /^(From:?)|(Newsgroups:) /)
     {
-	return 1;
+        return 1;
     }
     return 0;
 
-} # is_mailheader
+}    # is_mailheader
 
-sub mailheader ($%) {
-    my $self     = shift;
+sub mailheader ($%)
+{
+    my $self = shift;
     my %args = (
-	rows_ref=>undef,
-	@_
+        rows_ref => undef,
+        @_
     );
     my $rows_ref = $args{rows_ref};
 
     # a mail header is assumed to be the whole
     # paragraph which starts with a From: or Newsgroups: line
-    my $tag = '';
+    my $tag  = '';
     my @rows = @{$rows_ref};
 
     if ($self->is_mailheader(%args))
     {
-	$self->{__mode} |= $MAILHEADER;
-	if ($self->{escape_HTML_chars}) {
-	    $rows[0] = escape($rows[0]);
-	}
-	$self->anchor_mail(\$rows[0]);
-	chomp ${rows}[0];
-	$tag = $self->get_tag('P', inside_tag=>" class='mail_header'");
-	my $tag2 = $self->get_tag('BR', tag_type=>'empty');
-	$rows[0] = join('', "<!-- New Message -->\n",
-		$tag, $rows[0], $tag2, "\n");
-	# now put breaks on the rest of the paragraph
-	# apart from the last line
-	for (my $rn=1; $rn < @rows; $rn++)
-	{
-	    if ($self->{escape_HTML_chars}) {
-		$rows[$rn] = escape($rows[$rn]);
-	    }
-	    if ($rn != (@rows - 1))
-	    {
-		$tag = $self->get_tag('BR', tag_type=>'empty');
-		chomp $rows[$rn];
-		$rows[$rn] =~ s/$/${tag}\n/;
-	    }
-	}
+        $self->{__mode} |= $MAILHEADER;
+        if ($self->{escape_HTML_chars})
+        {
+            $rows[0] = escape($rows[0]);
+        }
+        $self->anchor_mail(\$rows[0]);
+        chomp ${rows}[0];
+        $tag = $self->get_tag('P', inside_tag => " class='mail_header'");
+        my $tag2 = $self->get_tag('BR', tag_type => 'empty');
+        $rows[0] =
+          join('', "<!-- New Message -->\n", $tag, $rows[0], $tag2, "\n");
+        # now put breaks on the rest of the paragraph
+        # apart from the last line
+        for (my $rn = 1; $rn < @rows; $rn++)
+        {
+            if ($self->{escape_HTML_chars})
+            {
+                $rows[$rn] = escape($rows[$rn]);
+            }
+            if ($rn != (@rows - 1))
+            {
+                $tag = $self->get_tag('BR', tag_type => 'empty');
+                chomp $rows[$rn];
+                $rows[$rn] =~ s/$/${tag}\n/;
+            }
+        }
     }
     @{$rows_ref} = @rows;
 
-} # mailheader
+}    # mailheader
 
-sub mailquote ($%) {
-    my $self            = shift;
+sub mailquote ($%)
+{
+    my $self = shift;
     my %args = (
-	line_ref=>undef,
-	line_action_ref=>undef,
-	prev_ref=>undef,
-	prev_action_ref=>undef,
-	next_ref=>undef,
-	@_
+        line_ref        => undef,
+        line_action_ref => undef,
+        prev_ref        => undef,
+        prev_action_ref => undef,
+        next_ref        => undef,
+        @_
     );
     my $line_ref        = $args{line_ref};
     my $line_action_ref = $args{line_action_ref};
@@ -2187,17 +2443,20 @@ sub mailquote ($%) {
     my $next_ref        = $args{next_ref};
 
     my $tag = '';
-    if (((${$line_ref} =~ /^\w*&gt/)    # Handle "FF> Werewolves."
-        || (${$line_ref} =~ /^[\|:]/))    # Handle "[|:] There wolves."
-        && defined($next_ref)
-	&& (${$next_ref} !~ /^\s*$/)
+    if (
+        (
+            (${$line_ref} =~ /^\w*&gt/)    # Handle "FF> Werewolves."
+            || (${$line_ref} =~ /^[\|:]/)
+        )                                  # Handle "[|:] There wolves."
+        && defined($next_ref) && (${$next_ref} !~ /^\s*$/)
       )
     {
-	$tag = $self->get_tag('BR', tag_type=>'empty');
+        $tag = $self->get_tag('BR', tag_type => 'empty');
         ${$line_ref} =~ s/$/${tag}/;
         ${$line_action_ref} |= ($BREAK | $MAILQUOTE);
-        if (!(${$prev_action_ref} & ($BREAK | $MAILQUOTE))) {
-	    $tag = $self->get_tag('P', inside_tag=>" class='quote_mail'");
+        if (!(${$prev_action_ref} & ($BREAK | $MAILQUOTE)))
+        {
+            $tag = $self->get_tag('P', inside_tag => " class='quote_mail'");
             ${$prev_ref} .= $tag;
             ${$line_action_ref} |= $PAR;
         }
@@ -2205,333 +2464,360 @@ sub mailquote ($%) {
 }
 
 # Subtracts modes listed in $mask from $vector.
-sub subtract_modes ($$) {
+sub subtract_modes ($$)
+{
     my ($vector, $mask) = @_;
     return ($vector | $mask) - $mask;
 }
 
-sub paragraph ($%) {
-    my $self            = shift;
+sub paragraph ($%)
+{
+    my $self = shift;
     my %args = (
-	line_ref=>undef,
-	line_action_ref=>undef,
-	prev_ref=>undef,
-	prev_action_ref=>undef,
-	line_indent=>0,
-	prev_indent=>0,
-	is_fragment=>0,
-	ind=>0,
-	@_
-	);
+        line_ref        => undef,
+        line_action_ref => undef,
+        prev_ref        => undef,
+        prev_action_ref => undef,
+        line_indent     => 0,
+        prev_indent     => 0,
+        is_fragment     => 0,
+        ind             => 0,
+        @_
+    );
     my $line_ref        = $args{line_ref};
     my $line_action_ref = $args{line_action_ref};
     my $prev_ref        = $args{prev_ref};
     my $prev_action_ref = $args{prev_action_ref};
     my $line_indent     = $args{line_indent};
     my $prev_indent     = $args{prev_indent};
-    my $is_fragment	= $args{is_fragment};
-    my $line_no		= $args{ind};
+    my $is_fragment     = $args{is_fragment};
+    my $line_no         = $args{ind};
 
     my $tag = '';
-    if (${$line_ref} !~ /^\s*$/
-        && !subtract_modes(${$line_action_ref},
-            $END | $MAILQUOTE | $CAPS | $BREAK)
-        && (${$prev_ref} =~ /^\s*$/
+    if (
+        ${$line_ref} !~ /^\s*$/
+        && !subtract_modes(
+            ${$line_action_ref}, $END | $MAILQUOTE | $CAPS | $BREAK
+        )
+        && (   ${$prev_ref} =~ /^\s*$/
             || (${$line_action_ref} & $END)
             || ($line_indent > $prev_indent + $self->{par_indent}))
-	&& !($is_fragment && $line_no == 0)
-	)
+        && !($is_fragment && $line_no == 0)
+      )
     {
-	if ($self->{indent_par_break}
-	    && ${$prev_ref} !~ /^\s*$/
-	    && !(${$line_action_ref} & $END)
-	    && ($line_indent > $prev_indent + $self->{par_indent}))
-	{
-	    $tag = $self->get_tag('BR', tag_type=>'empty');
-	    ${$prev_ref} .= $tag;
-	    ${$prev_ref} .= "&nbsp;" x $line_indent;
-	    ${$line_ref} =~ s/^ {$line_indent}//;
-	    ${$prev_action_ref} |= $BREAK;
-	    ${$line_action_ref} |= $IND_BREAK;
-	}
-	elsif ($self->{preserve_indent})
-	{
-	    $tag = $self->get_tag('P');
-	    ${$prev_ref} .= $tag;
-	    ${$prev_ref} .= "&nbsp;" x $line_indent;
-	    ${$line_ref} =~ s/^ {$line_indent}//;
-	    ${$line_action_ref} |= $PAR;
-	}
-	else
-	{
-	    $tag = $self->get_tag('P');
-	    ${$prev_ref} .= $tag;
-	    ${$line_action_ref} |= $PAR;
-	}
+
+        if (   $self->{indent_par_break}
+            && ${$prev_ref} !~ /^\s*$/
+            && !(${$line_action_ref} & $END)
+            && ($line_indent > $prev_indent + $self->{par_indent}))
+        {
+            $tag = $self->get_tag('BR', tag_type => 'empty');
+            ${$prev_ref} .= $tag;
+            ${$prev_ref} .= "&nbsp;" x $line_indent;
+            ${$line_ref} =~ s/^ {$line_indent}//;
+            ${$prev_action_ref} |= $BREAK;
+            ${$line_action_ref} |= $IND_BREAK;
+        }
+        elsif ($self->{preserve_indent})
+        {
+            $tag = $self->get_tag('P');
+            ${$prev_ref} .= $tag;
+            ${$prev_ref} .= "&nbsp;" x $line_indent;
+            ${$line_ref} =~ s/^ {$line_indent}//;
+            ${$line_action_ref} |= $PAR;
+        }
+        else
+        {
+            $tag = $self->get_tag('P');
+            ${$prev_ref} .= $tag;
+            ${$line_action_ref} |= $PAR;
+        }
     }
     # detect also a continuing indentation at the same level
     elsif ($self->{indent_par_break}
         && !($self->{__mode} & ($PRE | $TABLE | $LIST))
-	&& ${$prev_ref} !~ /^\s*$/
-	&& !(${$line_action_ref} & $END)
-	&& (${$prev_action_ref} & ($IND_BREAK | $PAR))
-        && !subtract_modes(${$line_action_ref},
-            $END | $MAILQUOTE | $CAPS)
+        && ${$prev_ref} !~ /^\s*$/
+        && !(${$line_action_ref} & $END)
+        && (${$prev_action_ref} & ($IND_BREAK | $PAR))
+        && !subtract_modes(${$line_action_ref}, $END | $MAILQUOTE | $CAPS)
         && ($line_indent > $self->{par_indent})
-	&& ($line_indent == $prev_indent)
-	)
+        && ($line_indent == $prev_indent))
     {
-	$tag = $self->get_tag('BR', tag_type=>'empty');
-	${$prev_ref} .= $tag;
-	${$prev_ref} .= "&nbsp;" x $line_indent;
-	${$line_ref} =~ s/^ {$line_indent}//;
-	${$prev_action_ref} |= $BREAK;
-	${$line_action_ref} |= $IND_BREAK;
+        $tag = $self->get_tag('BR', tag_type => 'empty');
+        ${$prev_ref} .= $tag;
+        ${$prev_ref} .= "&nbsp;" x $line_indent;
+        ${$line_ref} =~ s/^ {$line_indent}//;
+        ${$prev_action_ref} |= $BREAK;
+        ${$line_action_ref} |= $IND_BREAK;
     }
 }
 
-sub listprefix ($$) {
+sub listprefix ($$)
+{
     my $self = shift;
     my $line = shift;
 
     my ($prefix, $number, $rawprefix, $term);
 
-    my $bullets = $self->{bullets};
+    my $bullets         = $self->{bullets};
     my $bullets_ordered = $self->{bullets_ordered};
-    my $number_match = '(\d+|[^\W\d])';
-    if ($bullets_ordered) {
-	$number_match = '(\d+|[a-zA-Z]|[' . "${bullets_ordered}])";
+    my $number_match    = '(\d+|[^\W\d])';
+    if ($bullets_ordered)
+    {
+        $number_match = '(\d+|[a-zA-Z]|[' . "${bullets_ordered}])";
     }
     $self->{__number_match} = $number_match;
     my $term_match = '(\w\w+)';
     $self->{__term_match} = $term_match;
     return (0, 0, 0, 0)
-	if (!($line =~ /^\s*[${bullets}]\s+\S/)
-		&& !($line =~ /^\s*${number_match}[\.\)\]:]\s+\S/)
-		&& !($line =~ /^\s*${term_match}:$/));
+      if ( !($line =~ /^\s*[${bullets}]\s+\S/)
+        && !($line =~ /^\s*${number_match}[\.\)\]:]\s+\S/)
+        && !($line =~ /^\s*${term_match}:$/));
 
-    ($term) = $line =~ /^\s*${term_match}:$/;
+    ($term)   = $line =~ /^\s*${term_match}:$/;
     ($number) = $line =~ /^\s*${number_match}\S\s+\S/;
     $number = 0 unless defined($number);
-    if ($bullets_ordered
-	&& $number =~ /[${bullets_ordered}]/) {
-	$number = 1;
+    if (   $bullets_ordered
+        && $number =~ /[${bullets_ordered}]/)
+    {
+        $number = 1;
     }
 
     # That slippery exception of "o" as a bullet
     # (This ought to be determined using the context of what lists
     #  we have in progress, but this will probably work well enough.)
-    if ($bullets =~ /o/ && $line =~ /^\s*o\s/) {
+    if ($bullets =~ /o/ && $line =~ /^\s*o\s/)
+    {
         $number = 0;
     }
 
-    if ($term) {
+    if ($term)
+    {
         ($rawprefix) = $line =~ /^(\s*${term_match}.)$/;
         $prefix = $rawprefix;
         $prefix =~ s/${term_match}//;    # Take the term out
     }
-    elsif ($number) {
+    elsif ($number)
+    {
         ($rawprefix) = $line =~ /^(\s*${number_match}.)/;
         $prefix = $rawprefix;
         $prefix =~ s/${number_match}//;    # Take the number out
     }
-    else {
+    else
+    {
         ($rawprefix) = $line =~ /^(\s*[${bullets}].)/;
         $prefix = $rawprefix;
     }
     ($prefix, $number, $rawprefix, $term);
-} # listprefix
+}    # listprefix
 
-sub startlist ($%) {
-    my $self		= shift;
+sub startlist ($%)
+{
+    my $self = shift;
     my %args = (
-	prefix=>'',
-	number=>0,
-	rawprefix=>'',
-	term=>'',
-	para_lines_ref=>undef,
-	para_action_ref=>undef,
-	ind=>0,
-	prev_ref=>undef,
-	total_prefix=>'',
-	@_
-	);
-    my $prefix		= $args{prefix};
-    my $number		= $args{number};
-    my $rawprefix	= $args{rawprefix};
-    my $term		= $args{term};
-    my $para_lines_ref	= $args{para_lines_ref};
-    my $para_action_ref	= $args{para_action_ref};
-    my $ind		= $args{ind};
-    my $prev_ref	= $args{prev_ref};
+        prefix          => '',
+        number          => 0,
+        rawprefix       => '',
+        term            => '',
+        para_lines_ref  => undef,
+        para_action_ref => undef,
+        ind             => 0,
+        prev_ref        => undef,
+        total_prefix    => '',
+        @_
+    );
+    my $prefix          = $args{prefix};
+    my $number          = $args{number};
+    my $rawprefix       = $args{rawprefix};
+    my $term            = $args{term};
+    my $para_lines_ref  = $args{para_lines_ref};
+    my $para_action_ref = $args{para_action_ref};
+    my $ind             = $args{ind};
+    my $prev_ref        = $args{prev_ref};
 
     my $tag = '';
     $self->{__listprefix}->[$self->{__listnum}] = $prefix;
-    if ($number) {
+    if ($number)
+    {
 
         # It doesn't start with 1,a,A.  Let's not screw with it.
-        if (($number ne "1") && ($number ne "a") && ($number ne "A")) {
+        if (($number ne "1") && ($number ne "a") && ($number ne "A"))
+        {
             return 0;
         }
-	$tag = $self->get_tag('OL');
+        $tag = $self->get_tag('OL');
         ${$prev_ref} .= join('', $self->{__list_nice_indent}, $tag, "\n");
         $self->{__list}->[$self->{__listnum}] = $OL;
     }
-    elsif ($term) {
-	$tag = $self->get_tag('DL');
+    elsif ($term)
+    {
+        $tag = $self->get_tag('DL');
         ${$prev_ref} .= join('', $self->{__list_nice_indent}, $tag, "\n");
         $self->{__list}->[$self->{__listnum}] = $DL;
     }
-    else {
-	$tag = $self->get_tag('UL');
+    else
+    {
+        $tag = $self->get_tag('UL');
         ${$prev_ref} .= join('', $self->{__list_nice_indent}, $tag, "\n");
         $self->{__list}->[$self->{__listnum}] = $UL;
     }
 
     $self->{__list_indent}->[$self->{__listnum}] = length($args{total_prefix});
     $self->{__listnum}++;
-    $self->{__list_nice_indent} = " " x $self->{__listnum} x $self->{indent_width};
+    $self->{__list_nice_indent} =
+      " " x $self->{__listnum} x $self->{indent_width};
     $para_action_ref->[$ind] |= $LIST;
     $para_action_ref->[$ind] |= $LIST_START;
-    $self->{__mode} |= $LIST;
+    $self->{__mode}          |= $LIST;
     1;
-} # startlist
+}    # startlist
 
 # End N lists
-sub endlist ($%) {
-    my $self            = shift;
+sub endlist ($%)
+{
+    my $self = shift;
     my %args = (
-	num_lists=>0,
-	prev_ref=>undef,
-	line_action_ref=>undef,
-	@_
-	);
+        num_lists       => 0,
+        prev_ref        => undef,
+        line_action_ref => undef,
+        @_
+    );
     my $n               = $args{num_lists};
     my $prev_ref        = $args{prev_ref};
     my $line_action_ref = $args{line_action_ref};
 
     my $tag = '';
-    for (; $n > 0 ; $n--, $self->{__listnum}--) {
+    for (; $n > 0; $n--, $self->{__listnum}--)
+    {
         $self->{__list_nice_indent} =
           " " x ($self->{__listnum} - 1) x $self->{indent_width};
-        if ($self->{__list}->[$self->{__listnum} - 1] == $UL) {
-	    $tag = $self->get_tag('UL', tag_type=>'end');
+        if ($self->{__list}->[$self->{__listnum} - 1] == $UL)
+        {
+            $tag = $self->get_tag('UL', tag_type => 'end');
             ${$prev_ref} .= join('', $self->{__list_nice_indent}, $tag, "\n");
-	    pop @{$self->{__list_indent}};
+            pop @{$self->{__list_indent}};
         }
-        elsif ($self->{__list}->[$self->{__listnum} - 1] == $OL) {
-	    $tag = $self->get_tag('OL', tag_type=>'end');
+        elsif ($self->{__list}->[$self->{__listnum} - 1] == $OL)
+        {
+            $tag = $self->get_tag('OL', tag_type => 'end');
             ${$prev_ref} .= join('', $self->{__list_nice_indent}, $tag, "\n");
-	    pop @{$self->{__list_indent}};
+            pop @{$self->{__list_indent}};
         }
-        elsif ($self->{__list}->[$self->{__listnum} - 1] == $DL) {
-	    $tag = $self->get_tag('DL', tag_type=>'end');
+        elsif ($self->{__list}->[$self->{__listnum} - 1] == $DL)
+        {
+            $tag = $self->get_tag('DL', tag_type => 'end');
             ${$prev_ref} .= join('', $self->{__list_nice_indent}, $tag, "\n");
-	    pop @{$self->{__list_indent}};
+            pop @{$self->{__list_indent}};
         }
-        else {
+        else
+        {
             print STDERR "Encountered list of unknown type\n";
         }
     }
     ${$line_action_ref} |= $END;
     $self->{__mode} ^= $LIST if (!$self->{__listnum});
-} # endlist
+}    # endlist
 
-sub continuelist ($%) {
-    my $self            = shift;
+sub continuelist ($%)
+{
+    my $self = shift;
     my %args = (
-	para_lines_ref=>undef,
-	para_action_ref=>undef,
-	ind=>0,
-	term=>'',
-	@_
-	);
-    my $para_lines_ref	= $args{para_lines_ref};
-    my $para_action_ref	= $args{para_action_ref};
-    my $ind		= $args{ind};
-    my $term		= $args{term};
+        para_lines_ref  => undef,
+        para_action_ref => undef,
+        ind             => 0,
+        term            => '',
+        @_
+    );
+    my $para_lines_ref  = $args{para_lines_ref};
+    my $para_action_ref = $args{para_action_ref};
+    my $ind             = $args{ind};
+    my $term            = $args{term};
 
     my $list_indent = $self->{__list_nice_indent};
-    my $bullets = $self->{bullets};
-    my $num_match = $self->{__number_match};
-    my $term_match = $self->{__term_match};
-    my $tag = '';
-    if ($self->{__list}->[$self->{__listnum} - 1] == $UL
-	&& $para_lines_ref->[$ind] =~ /^\s*[${bullets}]\s*/)
+    my $bullets     = $self->{bullets};
+    my $num_match   = $self->{__number_match};
+    my $term_match  = $self->{__term_match};
+    my $tag         = '';
+    if (   $self->{__list}->[$self->{__listnum} - 1] == $UL
+        && $para_lines_ref->[$ind] =~ /^\s*[${bullets}]\s*/)
     {
-	$tag = $self->get_tag('LI');
-	$para_lines_ref->[$ind] =~ s/^\s*[${bullets}]\s*/${list_indent}${tag}/;
-	$para_action_ref->[$ind] |= $LIST_ITEM;
+        $tag = $self->get_tag('LI');
+        $para_lines_ref->[$ind] =~ s/^\s*[${bullets}]\s*/${list_indent}${tag}/;
+        $para_action_ref->[$ind] |= $LIST_ITEM;
     }
     if ($self->{__list}->[$self->{__listnum} - 1] == $OL)
     {
-	$tag = $self->get_tag('LI');
-	$para_lines_ref->[$ind] =~ s/^\s*${num_match}.\s*/${list_indent}${tag}/;
-	$para_action_ref->[$ind] |= $LIST_ITEM;
+        $tag = $self->get_tag('LI');
+        $para_lines_ref->[$ind] =~ s/^\s*${num_match}.\s*/${list_indent}${tag}/;
+        $para_action_ref->[$ind] |= $LIST_ITEM;
     }
-    if ($self->{__list}->[$self->{__listnum} - 1] == $DL
-	&& $term)
+    if (   $self->{__list}->[$self->{__listnum} - 1] == $DL
+        && $term)
     {
-	$tag = $self->get_tag('DT');
-	my $tag2 = $self->get_tag('DT', tag_type=>'end');
-	$term =~ s/_/ /g; # underscores are now spaces in the term
-	$para_lines_ref->[$ind]
-	    =~ s/^\s*${term_match}.$/${list_indent}${tag}${term}${tag2}/;
-	$tag = $self->get_tag('DD');
-	$para_lines_ref->[$ind] .= ${tag};
-	$para_action_ref->[$ind] |= $LIST_ITEM;
+        $tag = $self->get_tag('DT');
+        my $tag2 = $self->get_tag('DT', tag_type => 'end');
+        $term =~ s/_/ /g;    # underscores are now spaces in the term
+        $para_lines_ref->[$ind] =~
+          s/^\s*${term_match}.$/${list_indent}${tag}${term}${tag2}/;
+        $tag = $self->get_tag('DD');
+        $para_lines_ref->[$ind] .= ${tag};
+        $para_action_ref->[$ind] |= $LIST_ITEM;
     }
     $para_action_ref->[$ind] |= $LIST;
-} # continuelist
+}    # continuelist
 
-
-sub liststuff ($%) {
-    my $self            = shift;
+sub liststuff ($%)
+{
+    my $self = shift;
     my %args = (
-	para_lines_ref=>undef,
-	para_action_ref=>undef,
-	para_line_indent_ref=>undef,
-	ind=>0,
-	prev_ref=>undef,
-	@_
-	);
-    my $para_lines_ref	= $args{para_lines_ref};
-    my $para_action_ref	= $args{para_action_ref};
+        para_lines_ref       => undef,
+        para_action_ref      => undef,
+        para_line_indent_ref => undef,
+        ind                  => 0,
+        prev_ref             => undef,
+        @_
+    );
+    my $para_lines_ref       = $args{para_lines_ref};
+    my $para_action_ref      = $args{para_action_ref};
     my $para_line_indent_ref = $args{para_line_indent_ref};
-    my $ind		= $args{ind};
-    my $prev_ref	= $args{prev_ref};
+    my $ind                  = $args{ind};
+    my $prev_ref             = $args{prev_ref};
 
     my $i;
 
     my ($prefix, $number, $rawprefix, $term) =
-	$self->listprefix($para_lines_ref->[$ind]);
+      $self->listprefix($para_lines_ref->[$ind]);
 
-    if (!$prefix) {
-	# if the previous line is not blank
-	if ($ind > 0 && $para_lines_ref->[$ind - 1] !~ /^\s*$/)
-	{
-	    # inside a list item
-	    return;
-	}
-	# This might be a new paragraph within an existing list item;
-	# It will be the first line, and have the same indentation
-	# as the list's indentation.
-	if ($ind == 0
-	    && $self->{__listnum}
-	    && $para_line_indent_ref->[$ind]
-		== $self->{__list_indent}->[$self->{__listnum} - 1])
-	{
-	    # start a paragraph
-	    my $tag = $self->get_tag('P');
-	    ${$prev_ref} .= $tag;
-	    $para_action_ref->[$ind] |= $PAR;
-	    return;
-	}
+    if (!$prefix)
+    {
+        # if the previous line is not blank
+        if ($ind > 0 && $para_lines_ref->[$ind - 1] !~ /^\s*$/)
+        {
+            # inside a list item
+            return;
+        }
+        # This might be a new paragraph within an existing list item;
+        # It will be the first line, and have the same indentation
+        # as the list's indentation.
+        if (   $ind == 0
+            && $self->{__listnum}
+            && $para_line_indent_ref->[$ind] ==
+            $self->{__list_indent}->[$self->{__listnum} - 1])
+        {
+            # start a paragraph
+            my $tag = $self->get_tag('P');
+            ${$prev_ref} .= $tag;
+            $para_action_ref->[$ind] |= $PAR;
+            return;
+        }
         # This ain't no list.  We'll want to end all of them.
-        if ($self->{__listnum}) {
-            $self->endlist(num_lists=>$self->{__listnum},
-		prev_ref=>$prev_ref,
-		line_action_ref=>\$para_action_ref->[$ind]);
+        if ($self->{__listnum})
+        {
+            $self->endlist(
+                num_lists       => $self->{__listnum},
+                prev_ref        => $prev_ref,
+                line_action_ref => \$para_action_ref->[$ind]
+            );
         }
         return;
     }
@@ -2540,16 +2826,20 @@ sub liststuff ($%) {
     # to the right, the prefix will shrink and we'll fail to match the
     # right list.  We need to account for this.
     my $prefix_alternate;
-    if (length("" . $number) > 1) {
+    if (length("" . $number) > 1)
+    {
         $prefix_alternate = (" " x (length("" . $number) - 1)) . $prefix;
     }
 
     # Maybe we're going back up to a previous list
-    for ($i = $self->{__listnum} - 1 ;
-        ($i >= 0) && ($prefix ne $self->{__listprefix}->[$i]) ; $i--
+    for (
+        $i = $self->{__listnum} - 1;
+        ($i >= 0) && ($prefix ne $self->{__listprefix}->[$i]);
+        $i--
       )
     {
-        if (length("" . $number) > 1) {
+        if (length("" . $number) > 1)
+        {
             last if $prefix_alternate eq $self->{__listprefix}->[$i];
         }
     }
@@ -2560,47 +2850,55 @@ sub liststuff ($%) {
     # prefix starts.  This won't screw anything up, and if we don't do
     # it, the next line might appear to be indented relative to this
     # line, and get tagged as a new paragraph.
-    my $bullets = $self->{bullets};
+    my $bullets         = $self->{bullets};
     my $bullets_ordered = $self->{bullets_ordered};
-    my $term_match = $self->{__term_match};
-    my ($total_prefix) =
-	$para_lines_ref->[$ind] =~ /^(\s*[${bullets}${bullets_ordered}\w]+.\s*)/;
+    my $term_match      = $self->{__term_match};
+    my ($total_prefix)  =
+      $para_lines_ref->[$ind] =~ /^(\s*[${bullets}${bullets_ordered}\w]+.\s*)/;
     # a DL indent starts from the edge of the term, plus indent_width
-    if ($term) {
-	($total_prefix) =
-	    $para_lines_ref->[$ind] =~ /^(\s*)${term_match}.$/;
-	$total_prefix .= " " x $self->{indent_width};
+    if ($term)
+    {
+        ($total_prefix) = $para_lines_ref->[$ind] =~ /^(\s*)${term_match}.$/;
+        $total_prefix .= " " x $self->{indent_width};
     }
 
     # Of course, we only use it if it really turns out to be a list.
 
     $islist = 1;
     $i++;
-    if (($i > 0) && ($i != $self->{__listnum})) {
-        $self->endlist(num_lists=>$self->{__listnum} - $i,
-		prev_ref=>$prev_ref,
-		line_action_ref=>\$para_action_ref->[$ind]);
+    if (($i > 0) && ($i != $self->{__listnum}))
+    {
+        $self->endlist(
+            num_lists       => $self->{__listnum} - $i,
+            prev_ref        => $prev_ref,
+            line_action_ref => \$para_action_ref->[$ind]
+        );
         $islist = 0;
     }
-    elsif (!$self->{__listnum} || ($i != $self->{__listnum})) {
-        if (($para_line_indent_ref->[$ind] > 0)
-	    || $ind == 0
+    elsif (!$self->{__listnum} || ($i != $self->{__listnum}))
+    {
+        if (
+               ($para_line_indent_ref->[$ind] > 0)
+            || $ind == 0
             || ($ind > 0 && ($para_lines_ref->[$ind - 1] =~ /^\s*$/))
-            || ($ind > 0
-		&& $para_action_ref->[$ind - 1] & ($BREAK | $HEADER | $CAPS))
-	    )
+            || (   $ind > 0
+                && $para_action_ref->[$ind - 1] & ($BREAK | $HEADER | $CAPS))
+          )
         {
-            $islist = $self->startlist(prefix=>$prefix,
-		number=>$number,
-		rawprefix=>$rawprefix,
-		term=>$term,
-		para_lines_ref=>$para_lines_ref,
-		para_action_ref=>$para_action_ref,
-		ind=>$ind,
-		prev_ref=>$prev_ref,
-		total_prefix=>$total_prefix);
+            $islist = $self->startlist(
+                prefix          => $prefix,
+                number          => $number,
+                rawprefix       => $rawprefix,
+                term            => $term,
+                para_lines_ref  => $para_lines_ref,
+                para_action_ref => $para_action_ref,
+                ind             => $ind,
+                prev_ref        => $prev_ref,
+                total_prefix    => $total_prefix
+            );
         }
-        else {
+        else
+        {
 
             # We have something like this: "- foo" which usually
             # turns out not to be a list.
@@ -2608,54 +2906,58 @@ sub liststuff ($%) {
         }
     }
 
-    $self->continuelist(para_lines_ref=>$para_lines_ref,
-	    para_action_ref=>$para_action_ref,
-	    ind=>$ind,
-	    term=>$term)
+    $self->continuelist(
+        para_lines_ref  => $para_lines_ref,
+        para_action_ref => $para_action_ref,
+        ind             => $ind,
+        term            => $term
+      )
       if ($self->{__mode} & $LIST);
     $para_line_indent_ref->[$ind] = length($total_prefix) if $islist;
-} # liststuff
+}    # liststuff
 
 # figure out the table type of this table, if any
-sub get_table_type ($%) {
-    my $self     = shift;
+sub get_table_type ($%)
+{
+    my $self = shift;
     my %args = (
-	rows_ref=>undef,
-	para_len=>0,
-	@_
+        rows_ref => undef,
+        para_len => 0,
+        @_
     );
     my $table_type = 0;
-    if ($self->{table_type}->{DELIM}
-	&& $self->is_delim_table(%args))
+    if (   $self->{table_type}->{DELIM}
+        && $self->is_delim_table(%args))
     {
-	$table_type = $TAB_DELIM;
+        $table_type = $TAB_DELIM;
     }
     elsif ($self->{table_type}->{ALIGN}
-	&& $self->is_aligned_table(%args))
+        && $self->is_aligned_table(%args))
     {
-	$table_type = $TAB_ALIGN;
+        $table_type = $TAB_ALIGN;
     }
     elsif ($self->{table_type}->{PGSQL}
-	&& $self->is_pgsql_table(%args))
+        && $self->is_pgsql_table(%args))
     {
-	$table_type = $TAB_PGSQL;
+        $table_type = $TAB_PGSQL;
     }
     elsif ($self->{table_type}->{BORDER}
-	&& $self->is_border_table(%args))
+        && $self->is_border_table(%args))
     {
-	$table_type = $TAB_BORDER;
+        $table_type = $TAB_BORDER;
     }
 
     return $table_type;
 }
 
 # check if the given paragraph-array is an aligned table
-sub is_aligned_table ($%) {
-    my $self     = shift;
+sub is_aligned_table ($%)
+{
+    my $self = shift;
     my %args = (
-	rows_ref=>undef,
-	para_len=>0,
-	@_
+        rows_ref => undef,
+        para_len => 0,
+        @_
     );
     my $rows_ref = $args{rows_ref};
     my $para_len = $args{para_len};
@@ -2674,33 +2976,38 @@ sub is_aligned_table ($%) {
     my @rows = @{$rows_ref};
     my @starts;
     my $spaces = '';
-    my $max = 0;
-    my $min = $para_len;
-    foreach my $row (@rows) {
+    my $max    = 0;
+    my $min    = $para_len;
+    foreach my $row (@rows)
+    {
         ($spaces |= $row) =~ tr/ /\xff/c;
         $min = length $row if length $row < $min;
         $max = length $row if $max < length $row;
     }
     $spaces = substr $spaces, 0, $min;
-    push (@starts, 0) unless $spaces =~ /^ /;
-    while ($spaces =~ /((?:^| ) +)(?=[^ ])/g) {
+    push(@starts, 0) unless $spaces =~ /^ /;
+    while ($spaces =~ /((?:^| ) +)(?=[^ ])/g)
+    {
         push @starts, pos($spaces);
     }
 
-    if (2 <= @rows and 2 <= @starts) {
-	return 1;
+    if (2 <= @rows and 2 <= @starts)
+    {
+        return 1;
     }
-    else {
-	return 0;
+    else
+    {
+        return 0;
     }
 }
 
-sub is_pgsql_table ($%) {
-    my $self     = shift;
+sub is_pgsql_table ($%)
+{
+    my $self = shift;
     my %args = (
-	rows_ref=>undef,
-	para_len=>0,
-	@_
+        rows_ref => undef,
+        para_len => 0,
+        @_
     );
     my $rows_ref = $args{rows_ref};
     my $para_len = $args{para_len};
@@ -2711,45 +3018,48 @@ sub is_pgsql_table ($%) {
     # then it has one or more rows of column values separated by |
     # then it has a row-count (N rows)
     # Thus it must have at least 4 rows.
-    if (@{$rows_ref} < 4) {
-	return 0;
+    if (@{$rows_ref} < 4)
+    {
+        return 0;
     }
 
     my @rows = @{$rows_ref};
-    if ($rows[0] !~ /\|/ && $rows[0] =~ /^\s*\w+/) # possible caption
+    if ($rows[0] !~ /\|/ && $rows[0] =~ /^\s*\w+/)    # possible caption
     {
-	shift @rows;
+        shift @rows;
     }
-    if (@rows < 4) {
-	return 0;
-    }
-    if ($rows[0] !~ /^\s*\w+\s+\|\s+/) # Colname |
+    if (@rows < 4)
     {
-	return 0;
+        return 0;
     }
-    if ($rows[1] !~ /^\s*[-]+[+][-]+/) # ----+----
+    if ($rows[0] !~ /^\s*\w+\s+\|\s+/)                # Colname |
     {
-	return 0;
+        return 0;
     }
-    if ($rows[2] !~ /^\s*[^|]*\s+\|\s+/) # value |
+    if ($rows[1] !~ /^\s*[-]+[+][-]+/)                # ----+----
     {
-	return 0;
+        return 0;
+    }
+    if ($rows[2] !~ /^\s*[^|]*\s+\|\s+/)              # value |
+    {
+        return 0;
     }
     # check the last row for rowcount
     if ($rows[$#rows] !~ /\(\d+\s+rows\)/)
     {
-	return 0;
+        return 0;
     }
 
     return 1;
 }
 
-sub is_border_table ($%) {
-    my $self     = shift;
+sub is_border_table ($%)
+{
+    my $self = shift;
     my %args = (
-	rows_ref=>undef,
-	para_len=>0,
-	@_
+        rows_ref => undef,
+        para_len => 0,
+        @_
     );
     my $rows_ref = $args{rows_ref};
     my $para_len = $args{para_len};
@@ -2762,49 +3072,52 @@ sub is_border_table ($%) {
     # then it has a row of +------+-----+
     # Thus it must have at least 5 rows.
     # And note that it could be indented with spaces
-    if (@{$rows_ref} < 5) {
-	return 0;
+    if (@{$rows_ref} < 5)
+    {
+        return 0;
     }
 
     my @rows = @{$rows_ref};
-    if ($rows[0] !~ /\|/ && $rows[0] =~ /^\s*\w+/) # possible caption
+    if ($rows[0] !~ /\|/ && $rows[0] =~ /^\s*\w+/)    # possible caption
     {
-	shift @rows;
+        shift @rows;
     }
-    if (@rows < 5) {
-	return 0;
-    }
-    if ($rows[0] !~ /^\s*[+][-]+[+][-]+[+][-+]*$/) # +----+----+
+    if (@rows < 5)
     {
-	return 0;
+        return 0;
     }
-    if ($rows[1] !~ /^\s*\|\s*\w+\s+\|\s+.*\|$/) # | Colname |
+    if ($rows[0] !~ /^\s*[+][-]+[+][-]+[+][-+]*$/)    # +----+----+
     {
-	return 0;
+        return 0;
     }
-    if ($rows[2] !~ /^\s*[+][-]+[+][-]+[+][-+]*$/) # +----+----+
+    if ($rows[1] !~ /^\s*\|\s*\w+\s+\|\s+.*\|$/)      # | Colname |
     {
-	return 0;
+        return 0;
     }
-    if ($rows[3] !~ /^\s*\|\s*[^|]*\s+\|\s+.*\|$/) # | value |
+    if ($rows[2] !~ /^\s*[+][-]+[+][-]+[+][-+]*$/)    # +----+----+
     {
-	return 0;
+        return 0;
+    }
+    if ($rows[3] !~ /^\s*\|\s*[^|]*\s+\|\s+.*\|$/)    # | value |
+    {
+        return 0;
     }
     # check the last row for +------+------+
-    if ($rows[$#rows] !~ /^\s*[+][-]+[+][-]+[+][-+]*$/) # +----+----+
+    if ($rows[$#rows] !~ /^\s*[+][-]+[+][-]+[+][-+]*$/)    # +----+----+
     {
-	return 0;
+        return 0;
     }
 
     return 1;
-} # is_border_table
+}    # is_border_table
 
-sub is_delim_table ($%) {
-    my $self     = shift;
+sub is_delim_table ($%)
+{
+    my $self = shift;
     my %args = (
-	rows_ref=>undef,
-	para_len=>0,
-	@_
+        rows_ref => undef,
+        para_len => 0,
+        @_
     );
     my $rows_ref = $args{rows_ref};
     my $para_len = $args{para_len};
@@ -2817,94 +3130,102 @@ sub is_delim_table ($%) {
     # | val3 | val4 |
     #
     # And note that it could be indented with spaces
-    if (@{$rows_ref} < 2) {
-	return 0;
+    if (@{$rows_ref} < 2)
+    {
+        return 0;
     }
 
     my @rows = @{$rows_ref};
-    if ($rows[0] !~ /[^\w\s]/ && $rows[0] =~ /^\s*\w+/) # possible caption
+    if ($rows[0] !~ /[^\w\s]/ && $rows[0] =~ /^\s*\w+/)    # possible caption
     {
-	shift @rows;
+        shift @rows;
     }
-    if (@rows < 2) {
-	return 0;
+    if (@rows < 2)
+    {
+        return 0;
     }
     # figure out if the row starts with a possible delimiter
     my $delim = '';
     if ($rows[0] =~ /^\s*([^a-zA-Z0-9])/)
     {
-	$delim = $1;
-	# have to get rid of ^ and []
-	$delim =~ s/\^//g;
-	$delim =~ s/\[//g;
-	$delim =~ s/\]//g;
-	if (!$delim) # no delimiter after all
-	{
-	    return 0;
-	}
+        $delim = $1;
+        # have to get rid of ^ and []
+        $delim =~ s/\^//g;
+        $delim =~ s/\[//g;
+        $delim =~ s/\]//g;
+        if (!$delim)    # no delimiter after all
+        {
+            return 0;
+        }
     }
     else
     {
-	return 0;
+        return 0;
     }
     # There needs to be at least three delimiters in the row
     my @all_delims = ($rows[0] =~ /[${delim}]/g);
     my $total_num_delims = @all_delims;
     if ($total_num_delims < 3)
     {
-	return 0;
+        return 0;
     }
     # All rows must start and end with the delimiter
     # and have $total_num_delims number of them
     foreach my $row (@rows)
     {
-	if ($row !~ /^\s*[${delim}]/)
-	{
-	    return 0;
-	}
-	if ($row !~ /[${delim}]\s*$/)
-	{
-	    return 0;
-	}
-	@all_delims = ($row =~ /[${delim}]/g);
-	if (@all_delims != $total_num_delims)
-	{
-	    return 0;
-	}
+        if ($row !~ /^\s*[${delim}]/)
+        {
+            return 0;
+        }
+        if ($row !~ /[${delim}]\s*$/)
+        {
+            return 0;
+        }
+        @all_delims = ($row =~ /[${delim}]/g);
+        if (@all_delims != $total_num_delims)
+        {
+            return 0;
+        }
     }
 
     return 1;
-} # is_delim_table
+}    # is_delim_table
 
-sub tablestuff ($%) {
-    my $self     = shift;
+sub tablestuff ($%)
+{
+    my $self = shift;
     my %args = (
-	table_type=>0,
-	rows_ref=>undef,
-	para_len=>0,
-	@_
+        table_type => 0,
+        rows_ref   => undef,
+        para_len   => 0,
+        @_
     );
     my $table_type = $args{table_type};
-    if ($table_type eq $TAB_ALIGN) {
-	return $self->make_aligned_table(%args);
+    if ($table_type eq $TAB_ALIGN)
+    {
+        return $self->make_aligned_table(%args);
     }
-    if ($table_type eq $TAB_PGSQL) {
-	return $self->make_pgsql_table(%args);
+    if ($table_type eq $TAB_PGSQL)
+    {
+        return $self->make_pgsql_table(%args);
     }
-    if ($table_type eq $TAB_BORDER) {
-	return $self->make_border_table(%args);
+    if ($table_type eq $TAB_BORDER)
+    {
+        return $self->make_border_table(%args);
     }
-    if ($table_type eq $TAB_DELIM) {
-	return $self->make_delim_table(%args);
+    if ($table_type eq $TAB_DELIM)
+    {
+        return $self->make_delim_table(%args);
     }
-} # tablestuff
+}    # tablestuff
 
-sub make_aligned_table ($%) {
-    my $self     = shift;
+sub make_aligned_table ($%)
+{
+    my $self = shift;
     my %args = (
-	rows_ref=>undef,
-	para_len=>0,
-	@_
+        rows_ref => undef,
+        para_len => 0,
+        @_
     );
     my $rows_ref = $args{rows_ref};
     my $para_len = $args{para_len};
@@ -2926,22 +3247,25 @@ sub make_aligned_table ($%) {
     my $spaces;
     my $max = 0;
     my $min = $para_len;
-    foreach my $row (@rows) {
+    foreach my $row (@rows)
+    {
         ($spaces |= $row) =~ tr/ /\xff/c;
         $min = length $row if length $row < $min;
         $max = length $row if $max < length $row;
     }
     $spaces = substr $spaces, 0, $min;
-    push (@starts, 0) unless $spaces =~ /^ /;
-    while ($spaces =~ /((?:^| ) +)(?=[^ ])/g) {
+    push(@starts, 0) unless $spaces =~ /^ /;
+    while ($spaces =~ /((?:^| ) +)(?=[^ ])/g)
+    {
         push @ends,   pos($spaces) - length $1;
         push @starts, pos($spaces);
     }
-    shift (@ends) if $spaces =~ /^ /;
-    push (@ends, $max);
+    shift(@ends) if $spaces =~ /^ /;
+    push(@ends, $max);
 
     # Two or more rows and two or more columns indicate a table.
-    if (2 <= @rows and 2 <= @starts) {
+    if (2 <= @rows and 2 <= @starts)
+    {
         $self->{__mode} |= $TABLE;
 
         # For each column, guess whether it should be left, centre or
@@ -2951,9 +3275,11 @@ sub make_aligned_table ($%) {
         # alignment gets a majority, left alignment wins by default).
         my @align;
         my $cell = '';
-        foreach my $col (0 .. $#starts) {
+        foreach my $col (0 .. $#starts)
+        {
             my @count = (0, 0, 0, 0);
-            foreach my $row (@rows) {
+            foreach my $row (@rows)
+            {
                 my $width = $ends[$col] - $starts[$col];
                 $cell = substr $row, $starts[$col], $width;
                 ++$count[($cell =~ /^ / ? 2 : 0) +
@@ -2961,63 +3287,78 @@ sub make_aligned_table ($%) {
             }
             $align[$col] = 0;
             my $population = $count[1] + $count[2] + $count[3];
-            foreach (1 .. 3) {
-                if ($count[$_] * 2 > $population) {
+            foreach (1 .. 3)
+            {
+                if ($count[$_] * 2 > $population)
+                {
                     $align[$col] = $_;
                     last;
                 }
             }
         }
 
-        foreach my $row (@rows) {
+        foreach my $row (@rows)
+        {
             $row = join '', $self->get_tag('TR'), (
-              map {
-                  $cell = substr $row, $starts[$_], $ends[$_] - $starts[$_];
-                  $cell =~ s/^ +//;
-                  $cell =~ s/ +$//;
+                map {
+                    $cell = substr $row, $starts[$_], $ends[$_] - $starts[$_];
+                    $cell =~ s/^ +//;
+                    $cell =~ s/ +$//;
 
-                  if ($self->{escape_HTML_chars}) {
-                      $cell = escape($cell);
-                  }
+                    if ($self->{escape_HTML_chars})
+                    {
+                        $cell = escape($cell);
+                    }
 
-                  ($self->get_tag('TD', 
-		    inside_tag=>($self->{xhtml}
-			? $xhtml_alignments[$align[$_]]
-			: ($self->{lower_case_tags}
-			    ? $lc_alignments[$align[$_]]
-			    : $alignments[$align[$_]]))),
-		    $cell, $self->close_tag('TD'));
-              } 0 .. $#starts),
+                    (
+                        $self->get_tag(
+                            'TD',
+                            inside_tag => (
+                                $self->{xhtml} ? $xhtml_alignments[$align[$_]]
+                                : (
+                                      $self->{lower_case_tags}
+                                    ? $lc_alignments[$align[$_]]
+                                    : $alignments[$align[$_]]
+                                )
+                            )
+                        ),
+                        $cell,
+                        $self->close_tag('TD')
+                    );
+                  } 0 .. $#starts
+              ),
               $self->close_tag('TR');
         }
 
         # put the <TABLE> around the rows
-	my $tag;
-	if ($self->{xhtml})
-	{
-	    $tag = $self->get_tag('TABLE', inside_tag=>' summary=""');
-	}
-	else
-	{
-	    $tag = $self->get_tag('TABLE');
-	}
+        my $tag;
+        if ($self->{xhtml})
+        {
+            $tag = $self->get_tag('TABLE', inside_tag => ' summary=""');
+        }
+        else
+        {
+            $tag = $self->get_tag('TABLE');
+        }
         $rows[0] = join("\n", $tag, $rows[0]);
-	$tag = $self->close_tag('TABLE', tag_type=>'end');
+        $tag = $self->close_tag('TABLE', tag_type => 'end');
         $rows[$#rows] .= "\n${tag}";
         @{$rows_ref} = @rows;
         return 1;
     }
-    else {
+    else
+    {
         return 0;
     }
-} # make_aligned_table
+}    # make_aligned_table
 
-sub make_pgsql_table ($%) {
-    my $self     = shift;
+sub make_pgsql_table ($%)
+{
+    my $self = shift;
     my %args = (
-	rows_ref=>undef,
-	para_len=>0,
-	@_
+        rows_ref => undef,
+        para_len => 0,
+        @_
     );
     my $rows_ref = $args{rows_ref};
     my $para_len = $args{para_len};
@@ -3028,11 +3369,11 @@ sub make_pgsql_table ($%) {
     # then it has one or more rows of column values separated by |
     # then it has a row-count (N rows)
     # Thus it must have at least 4 rows.
-    my @rows = @{$rows_ref};
+    my @rows    = @{$rows_ref};
     my $caption = '';
-    if ($rows[0] !~ /\|/ && $rows[0] =~ /^\s*\w+/) # possible caption
+    if ($rows[0] !~ /\|/ && $rows[0] =~ /^\s*\w+/)    # possible caption
     {
-	$caption = shift @rows;
+        $caption = shift @rows;
     }
     my @headings = split(/\s+\|\s+/, shift @rows);
     # skip the ----+--- line
@@ -3046,20 +3387,21 @@ sub make_pgsql_table ($%) {
     my $tag2;
     if ($self->{xhtml})
     {
-	$tag = $self->get_tag('TABLE', inside_tag=>' border="1" summary=""');
+        $tag = $self->get_tag('TABLE', inside_tag => ' border="1" summary=""');
     }
     else
     {
-	$tag = $self->get_tag('TABLE', inside_tag=>' border="1"');
+        $tag = $self->get_tag('TABLE', inside_tag => ' border="1"');
     }
     push @tab_lines, "$tag\n";
-    if ($caption) {
-	$caption =~ s/^\s+//;
-	$caption =~ s/\s+$//;
-	$tag = $self->get_tag('CAPTION');
-	$tag2 = $self->close_tag('CAPTION');
-	$caption = join('', $tag, $caption, $tag2, "\n");
-	push @tab_lines, $caption;
+    if ($caption)
+    {
+        $caption =~ s/^\s+//;
+        $caption =~ s/\s+$//;
+        $tag     = $self->get_tag('CAPTION');
+        $tag2    = $self->close_tag('CAPTION');
+        $caption = join('', $tag, $caption, $tag2, "\n");
+        push @tab_lines, $caption;
     }
     # table header
     my $thead = '';
@@ -3069,11 +3411,11 @@ sub make_pgsql_table ($%) {
     $thead .= $tag;
     foreach my $col (@headings)
     {
-	$col =~ s/^\s+//;
-	$col =~ s/\s+$//;
-	$tag = $self->get_tag('TH');
-	$tag2 = $self->close_tag('TH');
-	$thead .= join('', $tag, $col, $tag2);
+        $col =~ s/^\s+//;
+        $col =~ s/\s+$//;
+        $tag  = $self->get_tag('TH');
+        $tag2 = $self->close_tag('TH');
+        $thead .= join('', $tag, $col, $tag2);
     }
     $tag = $self->close_tag('TR');
     $thead .= $tag;
@@ -3086,34 +3428,35 @@ sub make_pgsql_table ($%) {
     # each row
     foreach my $row (@rows)
     {
-	my $this_row = '';
-	$tag = $self->get_tag('TR');
-	$this_row .= $tag;
-	my @cols = split(/\|/, $row);
-	foreach my $cell (@cols)
-	{
-	    $cell =~ s/^\s+//;
-	    $cell =~ s/\s+$//;
-	    if ($self->{escape_HTML_chars}) {
-		$cell = escape($cell);
-	    }
-	    if (!$cell)
-	    {
-		$cell = '&nbsp;';
-	    }
-	    $tag = $self->get_tag('TD');
-	    $tag2 = $self->close_tag('TD');
-	    $this_row .= join('', $tag, $cell, $tag2);
-	}
-	$tag = $self->close_tag('TR');
-	$this_row .= $tag;
-	push @tab_lines, "${this_row}\n";
+        my $this_row = '';
+        $tag = $self->get_tag('TR');
+        $this_row .= $tag;
+        my @cols = split(/\|/, $row);
+        foreach my $cell (@cols)
+        {
+            $cell =~ s/^\s+//;
+            $cell =~ s/\s+$//;
+            if ($self->{escape_HTML_chars})
+            {
+                $cell = escape($cell);
+            }
+            if (!$cell)
+            {
+                $cell = '&nbsp;';
+            }
+            $tag  = $self->get_tag('TD');
+            $tag2 = $self->close_tag('TD');
+            $this_row .= join('', $tag, $cell, $tag2);
+        }
+        $tag = $self->close_tag('TR');
+        $this_row .= $tag;
+        push @tab_lines, "${this_row}\n";
     }
 
     # end the table
     $tag = $self->close_tag('TBODY');
     push @tab_lines, "$tag\n";
-    $tag = $self->get_tag('TABLE', tag_type=>'end');
+    $tag = $self->get_tag('TABLE', tag_type => 'end');
     push @tab_lines, "$tag\n";
 
     # and add the N rows line
@@ -3121,20 +3464,21 @@ sub make_pgsql_table ($%) {
     push @tab_lines, "${tag}${n_rows}\n";
     if ($self->{xhtml})
     {
-	$tag = $self->get_tag('P', tag_type=>'end');
-	$tab_lines[$#tab_lines] =~ s/\n/${tag}\n/;
+        $tag = $self->get_tag('P', tag_type => 'end');
+        $tab_lines[$#tab_lines] =~ s/\n/${tag}\n/;
     }
 
     # replace the rows
     @{$rows_ref} = @tab_lines;
-} # make_pgsql_table
+}    # make_pgsql_table
 
-sub make_border_table ($%) {
-    my $self     = shift;
+sub make_border_table ($%)
+{
+    my $self = shift;
     my %args = (
-	rows_ref=>undef,
-	para_len=>0,
-	@_
+        rows_ref => undef,
+        para_len => 0,
+        @_
     );
     my $rows_ref = $args{rows_ref};
     my $para_len = $args{para_len};
@@ -3145,11 +3489,11 @@ sub make_border_table ($%) {
     # then it has a row of +------+-----+
     # then it has one or more rows of column values separated by |
     # then it has a row of +------+-----+
-    my @rows = @{$rows_ref};
+    my @rows    = @{$rows_ref};
     my $caption = '';
-    if ($rows[0] !~ /\|/ && $rows[0] =~ /^\s*\w+/) # possible caption
+    if ($rows[0] !~ /\|/ && $rows[0] =~ /^\s*\w+/)    # possible caption
     {
-	$caption = shift @rows;
+        $caption = shift @rows;
     }
     # skip the +----+---+ line
     shift @rows;
@@ -3168,21 +3512,22 @@ sub make_border_table ($%) {
     my $tag;
     if ($self->{xhtml})
     {
-	$tag = $self->get_tag('TABLE', inside_tag=>' border="1" summary=""');
+        $tag = $self->get_tag('TABLE', inside_tag => ' border="1" summary=""');
     }
     else
     {
-	$tag = $self->get_tag('TABLE', inside_tag=>' border="1"');
+        $tag = $self->get_tag('TABLE', inside_tag => ' border="1"');
     }
     push @tab_lines, "$tag\n";
-    if ($caption) {
-	$caption =~ s/^\s+//;
-	$caption =~ s/\s+$//;
-	$tag = $self->get_tag('CAPTION');
-	$caption = $tag . $caption;
-	$tag = $self->close_tag('CAPTION');
-	$caption .= $tag;
-	push @tab_lines, "$caption\n";
+    if ($caption)
+    {
+        $caption =~ s/^\s+//;
+        $caption =~ s/\s+$//;
+        $tag     = $self->get_tag('CAPTION');
+        $caption = $tag . $caption;
+        $tag     = $self->close_tag('CAPTION');
+        $caption .= $tag;
+        push @tab_lines, "$caption\n";
     }
     # table header
     my $thead = '';
@@ -3192,13 +3537,13 @@ sub make_border_table ($%) {
     $thead .= $tag;
     foreach my $col (@headings)
     {
-	$col =~ s/^\s+//;
-	$col =~ s/\s+$//;
-	$tag = $self->get_tag('TH');
-	$thead .= $tag;
-	$thead .= $col;
-	$tag = $self->close_tag('TH');
-	$thead .= $tag;
+        $col =~ s/^\s+//;
+        $col =~ s/\s+$//;
+        $tag = $self->get_tag('TH');
+        $thead .= $tag;
+        $thead .= $col;
+        $tag = $self->close_tag('TH');
+        $thead .= $tag;
     }
     $tag = $self->close_tag('TR');
     $thead .= $tag;
@@ -3211,51 +3556,53 @@ sub make_border_table ($%) {
     # each row
     foreach my $row (@rows)
     {
-	# cut off the start and end |
-	$row =~ s/^\s*\|//;
-	$row =~ s/\|$//;
-	my $this_row = '';
-	$tag = $self->get_tag('TR');
-	$this_row .= $tag;
-	my @cols = split(/\|/, $row);
-	foreach my $cell (@cols)
-	{
-	    $cell =~ s/^\s+//;
-	    $cell =~ s/\s+$//;
-	    if ($self->{escape_HTML_chars}) {
-		$cell = escape($cell);
-	    }
-	    if (!$cell)
-	    {
-		$cell = '&nbsp;';
-	    }
-	    $tag = $self->get_tag('TD');
-	    $this_row .= $tag;
-	    $this_row .= $cell;
-	    $tag = $self->close_tag('TD');
-	    $this_row .= $tag;
-	}
-	$tag = $self->close_tag('TR');
-	$this_row .= $tag;
-	push @tab_lines, "${this_row}\n";
+        # cut off the start and end |
+        $row =~ s/^\s*\|//;
+        $row =~ s/\|$//;
+        my $this_row = '';
+        $tag = $self->get_tag('TR');
+        $this_row .= $tag;
+        my @cols = split(/\|/, $row);
+        foreach my $cell (@cols)
+        {
+            $cell =~ s/^\s+//;
+            $cell =~ s/\s+$//;
+            if ($self->{escape_HTML_chars})
+            {
+                $cell = escape($cell);
+            }
+            if (!$cell)
+            {
+                $cell = '&nbsp;';
+            }
+            $tag = $self->get_tag('TD');
+            $this_row .= $tag;
+            $this_row .= $cell;
+            $tag = $self->close_tag('TD');
+            $this_row .= $tag;
+        }
+        $tag = $self->close_tag('TR');
+        $this_row .= $tag;
+        push @tab_lines, "${this_row}\n";
     }
 
     # end the table
     $tag = $self->close_tag('TBODY');
     push @tab_lines, "$tag\n";
-    $tag = $self->get_tag('TABLE', tag_type=>'end');
+    $tag = $self->get_tag('TABLE', tag_type => 'end');
     push @tab_lines, "$tag\n";
 
     # replace the rows
     @{$rows_ref} = @tab_lines;
-} # make_border_table
+}    # make_border_table
 
-sub make_delim_table ($%) {
-    my $self     = shift;
+sub make_delim_table ($%)
+{
+    my $self = shift;
     my %args = (
-	rows_ref=>undef,
-	para_len=>0,
-	@_
+        rows_ref => undef,
+        para_len => 0,
+        @_
     );
     my $rows_ref = $args{rows_ref};
     my $para_len = $args{para_len};
@@ -3264,21 +3611,21 @@ sub make_delim_table ($%) {
     # then it has at least two rows which start and end and are
     # punctuated by a non-alphanumeric delimiter.
     # A DELIM table has no table-header.
-    my @rows = @{$rows_ref};
+    my @rows    = @{$rows_ref};
     my $caption = '';
-    if ($rows[0] !~ /\|/ && $rows[0] =~ /^\s*\w+/) # possible caption
+    if ($rows[0] !~ /\|/ && $rows[0] =~ /^\s*\w+/)    # possible caption
     {
-	$caption = shift @rows;
+        $caption = shift @rows;
     }
     # figure out the delimiter
     my $delim = '';
     if ($rows[0] =~ /^\s*([^a-zA-Z0-9])/)
     {
-	$delim = $1;
+        $delim = $1;
     }
     else
     {
-	return 0;
+        return 0;
     }
 
     # now start making the table
@@ -3286,179 +3633,195 @@ sub make_delim_table ($%) {
     my $tag;
     if ($self->{xhtml})
     {
-	$tag = $self->get_tag('TABLE', inside_tag=>' border="1" summary=""');
+        $tag = $self->get_tag('TABLE', inside_tag => ' border="1" summary=""');
     }
     else
     {
-	$tag = $self->get_tag('TABLE', inside_tag=>' border="1"');
+        $tag = $self->get_tag('TABLE', inside_tag => ' border="1"');
     }
     push @tab_lines, "$tag\n";
-    if ($caption) {
-	$caption =~ s/^\s+//;
-	$caption =~ s/\s+$//;
-	$tag = $self->get_tag('CAPTION');
-	$caption = $tag . $caption;
-	$tag = $self->close_tag('CAPTION');
-	$caption .= $tag;
-	push @tab_lines, "$caption\n";
+    if ($caption)
+    {
+        $caption =~ s/^\s+//;
+        $caption =~ s/\s+$//;
+        $tag     = $self->get_tag('CAPTION');
+        $caption = $tag . $caption;
+        $tag     = $self->close_tag('CAPTION');
+        $caption .= $tag;
+        push @tab_lines, "$caption\n";
     }
 
     # each row
     foreach my $row (@rows)
     {
-	# cut off the start and end delimiter
-	$row =~ s/^\s*[${delim}]//;
-	$row =~ s/[${delim}]$//;
-	my $this_row = '';
-	$tag = $self->get_tag('TR');
-	$this_row .= $tag;
-	my @cols = split(/[${delim}]/, $row);
-	foreach my $cell (@cols)
-	{
-	    $cell =~ s/^\s+//;
-	    $cell =~ s/\s+$//;
-	    if ($self->{escape_HTML_chars}) {
-		$cell = escape($cell);
-	    }
-	    if (!$cell)
-	    {
-		$cell = '&nbsp;';
-	    }
-	    $tag = $self->get_tag('TD');
-	    $this_row .= $tag;
-	    $this_row .= $cell;
-	    $tag = $self->close_tag('TD');
-	    $this_row .= $tag;
-	}
-	$tag = $self->close_tag('TR');
-	$this_row .= $tag;
-	push @tab_lines, "${this_row}\n";
+        # cut off the start and end delimiter
+        $row =~ s/^\s*[${delim}]//;
+        $row =~ s/[${delim}]$//;
+        my $this_row = '';
+        $tag = $self->get_tag('TR');
+        $this_row .= $tag;
+        my @cols = split(/[${delim}]/, $row);
+        foreach my $cell (@cols)
+        {
+            $cell =~ s/^\s+//;
+            $cell =~ s/\s+$//;
+            if ($self->{escape_HTML_chars})
+            {
+                $cell = escape($cell);
+            }
+            if (!$cell)
+            {
+                $cell = '&nbsp;';
+            }
+            $tag = $self->get_tag('TD');
+            $this_row .= $tag;
+            $this_row .= $cell;
+            $tag = $self->close_tag('TD');
+            $this_row .= $tag;
+        }
+        $tag = $self->close_tag('TR');
+        $this_row .= $tag;
+        push @tab_lines, "${this_row}\n";
     }
 
     # end the table
-    $tag = $self->get_tag('TABLE', tag_type=>'end');
+    $tag = $self->get_tag('TABLE', tag_type => 'end');
     push @tab_lines, "$tag\n";
 
     # replace the rows
     @{$rows_ref} = @tab_lines;
-} # make_delim_table
+}    # make_delim_table
 
 # Returns true if the passed string is considered to be preformatted
-sub is_preformatted ($$) {
+sub is_preformatted ($$)
+{
     my $self = shift;
     my $line = shift;
 
     my $pre_white_min = $self->{preformat_whitespace_min};
-    my $result = (($line =~ /\s{$pre_white_min,}\S+/o)    # whitespaces
-      || ($line =~ /\.{$pre_white_min,}\S+/o));    # dots
+    my $result        = (
+        ($line =~ /\s{$pre_white_min,}\S+/o)    # whitespaces
+          || ($line =~ /\.{$pre_white_min,}\S+/o)
+    );                                          # dots
     return $result;
 }
 
 # modifies the given string,
 # and returns the front preformatted part
-sub split_end_explicit_preformat ($%) {
-    my $self            = shift;
+sub split_end_explicit_preformat ($%)
+{
+    my $self = shift;
     my %args = (
-	para_ref=>undef,
-	@_
-	);
-    my $para_ref  = $args{para_ref};
+        para_ref => undef,
+        @_
+    );
+    my $para_ref = $args{para_ref};
 
-    my $tag = '';
-    my $pre_str = '';
+    my $tag      = '';
+    my $pre_str  = '';
     my $post_str = '';
-    if ($self->{__mode} & $PRE_EXPLICIT) {
-	my $pe_mark = $self->{preformat_end_marker};
-        if (${para_ref} =~ /$pe_mark/io) {
-	    ($pre_str, $post_str) = split(/$pe_mark/, ${$para_ref}, 2);
-	    if ($self->{escape_HTML_chars}) {
-		$pre_str = escape($pre_str);
-	    }
-	    $tag = $self->close_tag('PRE');
-	    $pre_str .= "${tag}\n";
+    if ($self->{__mode} & $PRE_EXPLICIT)
+    {
+        my $pe_mark = $self->{preformat_end_marker};
+        if (${para_ref} =~ /$pe_mark/io)
+        {
+            ($pre_str, $post_str) = split(/$pe_mark/, ${$para_ref}, 2);
+            if ($self->{escape_HTML_chars})
+            {
+                $pre_str = escape($pre_str);
+            }
+            $tag = $self->close_tag('PRE');
+            $pre_str .= "${tag}\n";
             $self->{__mode} ^= (($PRE | $PRE_EXPLICIT) & $self->{__mode});
         }
-	else # no end -- the whole thing is preformatted
-	{
-	    $pre_str = ${$para_ref};
-	    if ($self->{escape_HTML_chars}) {
-		$pre_str = escape($pre_str);
-	    }
-	    ${$para_ref} = '';
-	}
+        else    # no end -- the whole thing is preformatted
+        {
+            $pre_str = ${$para_ref};
+            if ($self->{escape_HTML_chars})
+            {
+                $pre_str = escape($pre_str);
+            }
+            ${$para_ref} = '';
+        }
     }
     return $pre_str;
-} # split_end_explicit_preformat
+}    # split_end_explicit_preformat
 
-sub endpreformat ($%) {
-    my $self            = shift;
+sub endpreformat ($%)
+{
+    my $self = shift;
     my %args = (
-	para_lines_ref=>undef,
-	para_action_ref=>undef,
-	ind=>0,
-	prev_ref=>undef,
-	@_
-	);
+        para_lines_ref  => undef,
+        para_action_ref => undef,
+        ind             => 0,
+        prev_ref        => undef,
+        @_
+    );
     my $para_lines_ref  = $args{para_lines_ref};
     my $para_action_ref = $args{para_action_ref};
-    my $ind		= $args{ind};
+    my $ind             = $args{ind};
     my $prev_ref        = $args{prev_ref};
 
     my $tag = '';
-    if ($self->{__mode} & $PRE_EXPLICIT) {
-	my $pe_mark = $self->{preformat_end_marker};
-        if ($para_lines_ref->[$ind] =~ /$pe_mark/io) {
-	    if ($ind == 0)
-	    {
-		$tag = $self->close_tag('PRE');
-		$para_lines_ref->[$ind] = "${tag}\n";
-	    }
-	    else
-	    {
-		$tag = $self->close_tag('PRE');
-		$para_lines_ref->[$ind - 1] .= "${tag}\n";
-		$para_lines_ref->[$ind] = "";
-	    }
+    if ($self->{__mode} & $PRE_EXPLICIT)
+    {
+        my $pe_mark = $self->{preformat_end_marker};
+        if ($para_lines_ref->[$ind] =~ /$pe_mark/io)
+        {
+            if ($ind == 0)
+            {
+                $tag = $self->close_tag('PRE');
+                $para_lines_ref->[$ind] = "${tag}\n";
+            }
+            else
+            {
+                $tag = $self->close_tag('PRE');
+                $para_lines_ref->[$ind - 1] .= "${tag}\n";
+                $para_lines_ref->[$ind] = "";
+            }
             $self->{__mode} ^= (($PRE | $PRE_EXPLICIT) & $self->{__mode});
-	    $para_action_ref->[$ind] |= $END;
+            $para_action_ref->[$ind] |= $END;
         }
         return;
     }
 
-    if (!$self->is_preformatted($para_lines_ref->[$ind])
-        && ($self->{endpreformat_trigger_lines} == 1
+    if (
+        !$self->is_preformatted($para_lines_ref->[$ind])
+        && (
+            $self->{endpreformat_trigger_lines} == 1
             || ($ind + 1 < @{$para_lines_ref}
-		&& !$self->is_preformatted($para_lines_ref->[$ind + 1]))
-	    || $ind + 1 >= @{$para_lines_ref} # last line of para
-		)
-	)
+                && !$self->is_preformatted($para_lines_ref->[$ind + 1]))
+            || $ind + 1 >= @{$para_lines_ref}    # last line of para
+        )
+      )
     {
-	if ($ind == 0)
-	{
-	    $tag = $self->close_tag('PRE');
-	    ${$prev_ref} = "${tag}\n";
-	}
-	else
-	{
-	    $tag = $self->close_tag('PRE');
-	    $para_lines_ref->[$ind - 1] .= "${tag}\n";
-	}
+        if ($ind == 0)
+        {
+            $tag = $self->close_tag('PRE');
+            ${$prev_ref} = "${tag}\n";
+        }
+        else
+        {
+            $tag = $self->close_tag('PRE');
+            $para_lines_ref->[$ind - 1] .= "${tag}\n";
+        }
         $self->{__mode} ^= ($PRE & $self->{__mode});
-	$para_action_ref->[$ind] |= $END;
+        $para_action_ref->[$ind] |= $END;
     }
-} # endpreformat
+}    # endpreformat
 
-sub preformat ($%) {
-    my $self            = shift;
+sub preformat ($%)
+{
+    my $self = shift;
     my %args = (
-	mode_ref=>undef,
-	line_ref=>undef,
-	line_action_ref=>undef,
-	prev_ref=>undef,
-	next_ref=>undef,
-	prev_action_ref=>undef,
-	@_
-	);
+        mode_ref        => undef,
+        line_ref        => undef,
+        line_action_ref => undef,
+        prev_ref        => undef,
+        next_ref        => undef,
+        prev_action_ref => undef,
+        @_
+    );
     my $mode_ref        = $args{mode_ref};
     my $line_ref        = $args{line_ref};
     my $line_action_ref = $args{line_action_ref};
@@ -3467,45 +3830,53 @@ sub preformat ($%) {
     my $prev_action_ref = $args{prev_action_ref};
 
     my $tag = '';
-    if ($self->{use_preformat_marker}) {
+    if ($self->{use_preformat_marker})
+    {
         my $pstart = $self->{preformat_start_marker};
-        if (${$line_ref} =~ /$pstart/io) {
+        if (${$line_ref} =~ /$pstart/io)
+        {
             if (${$prev_ref} =~ s/<P>$//)
-	    {
-		pop @{$self->{__tags}};
-	    }
-	    $tag = $self->get_tag('PRE', inside_tag=>" class='quote_explicit'");
+            {
+                pop @{$self->{__tags}};
+            }
+            $tag =
+              $self->get_tag('PRE', inside_tag => " class='quote_explicit'");
             ${$line_ref} = "${tag}\n";
-            ${$mode_ref} |= $PRE | $PRE_EXPLICIT;
+            ${$mode_ref}        |= $PRE | $PRE_EXPLICIT;
             ${$line_action_ref} |= $PRE;
             return;
         }
     }
 
-    if (!(${$line_action_ref} & $MAILQUOTE)
-	&& !(${$prev_action_ref} & $MAILQUOTE)
-	&& ($self->{preformat_trigger_lines} == 0
-        || ($self->is_preformatted(${$line_ref})
-            && ($self->{preformat_trigger_lines} == 1
-                || (defined $next_ref
-		    && $self->is_preformatted(${$next_ref})
-		)
-	    ))
-	)
-       )
+    if (
+           !(${$line_action_ref} & $MAILQUOTE)
+        && !(${$prev_action_ref} & $MAILQUOTE)
+        && (
+            $self->{preformat_trigger_lines} == 0
+            || (
+                $self->is_preformatted(${$line_ref})
+                && (
+                    $self->{preformat_trigger_lines} == 1
+                    || (defined $next_ref
+                        && $self->is_preformatted(${$next_ref}))
+                )
+            )
+        )
+      )
     {
-	if (${$prev_ref} =~ s/<P>$//)
-	{
-	    pop @{$self->{__tags}};
-	}
-	$tag = $self->get_tag('PRE');
+        if (${$prev_ref} =~ s/<P>$//)
+        {
+            pop @{$self->{__tags}};
+        }
+        $tag = $self->get_tag('PRE');
         ${$line_ref} =~ s/^/${tag}\n/;
-        ${$mode_ref} |= $PRE;
+        ${$mode_ref}        |= $PRE;
         ${$line_action_ref} |= $PRE;
     }
-} # preformat
+}    # preformat
 
-sub make_new_anchor ($$) {
+sub make_new_anchor ($$)
+{
     my $self          = shift;
     my $heading_level = shift;
 
@@ -3517,130 +3888,148 @@ sub make_new_anchor ($$) {
     $self->{__heading_count}->[$heading_level - 1]++;
 
     # Reset lower order counters
-    for ($i = @{$self->{__heading_count}} ; $i > $heading_level ; $i--) {
+    for ($i = @{$self->{__heading_count}}; $i > $heading_level; $i--)
+    {
         $self->{__heading_count}->[$i - 1] = 0;
     }
 
-    for ($i = 0 ; $i < $heading_level ; $i++) {
+    for ($i = 0; $i < $heading_level; $i++)
+    {
         $self->{__heading_count}->[$i] = 1
           if !$self->{__heading_count}->[$i];    # In case they skip any
         $anchor .= sprintf("_%d", $self->{__heading_count}->[$i]);
     }
     chomp($anchor);
     $anchor;
-} # make_new_anchor
+}    # make_new_anchor
 
-sub anchor_mail ($$) {
+sub anchor_mail ($$)
+{
     my $self     = shift;
     my $line_ref = shift;
 
-    if ($self->{make_anchors}) {
+    if ($self->{make_anchors})
+    {
         my ($anchor) = $self->make_new_anchor(0);
-	if ($self->{lower_case_tags}) {
-	    ${$line_ref} =~ s/([^ ]*)/<a name="$anchor">$1<\/a>/;
-	} else {
-	    ${$line_ref} =~ s/([^ ]*)/<A NAME="$anchor">$1<\/A>/;
-	}
+        if ($self->{lower_case_tags})
+        {
+            ${$line_ref} =~ s/([^ ]*)/<a name="$anchor">$1<\/a>/;
+        }
+        else
+        {
+            ${$line_ref} =~ s/([^ ]*)/<A NAME="$anchor">$1<\/A>/;
+        }
     }
-} # anchor_mail
+}    # anchor_mail
 
-sub anchor_heading ($$$) {
+sub anchor_heading ($$$)
+{
     my $self     = shift;
     my $level    = shift;
     my $line_ref = shift;
 
-    if ($self->{dict_debug} & 8) {
-	print STDERR "anchor_heading: ", ${$line_ref}, "\n";
+    if ($self->{dict_debug} & 8)
+    {
+        print STDERR "anchor_heading: ", ${$line_ref}, "\n";
     }
-    if ($self->{make_anchors}) {
+    if ($self->{make_anchors})
+    {
         my ($anchor) = $self->make_new_anchor($level);
-	if ($self->{lower_case_tags}) {
-	    ${$line_ref} =~ s/(<h.>)(.*)(<\/h.>)/$1<a name="$anchor">$2<\/a>$3/;
-	} else {
-	    ${$line_ref} =~ s/(<H.>)(.*)(<\/H.>)/$1<A NAME="$anchor">$2<\/A>$3/;
-	}
+        if ($self->{lower_case_tags})
+        {
+            ${$line_ref} =~ s/(<h.>)(.*)(<\/h.>)/$1<a name="$anchor">$2<\/a>$3/;
+        }
+        else
+        {
+            ${$line_ref} =~ s/(<H.>)(.*)(<\/H.>)/$1<A NAME="$anchor">$2<\/A>$3/;
+        }
     }
-    if ($self->{dict_debug} & 8) {
-	print STDERR "anchor_heading(after): ", ${$line_ref}, "\n";
+    if ($self->{dict_debug} & 8)
+    {
+        print STDERR "anchor_heading(after): ", ${$line_ref}, "\n";
     }
-} # anchor_heading
+}    # anchor_heading
 
-sub heading_level ($$) {
+sub heading_level ($$)
+{
     my $self = shift;
 
     my ($style) = @_;
     $self->{__heading_styles}->{$style} = ++$self->{__num_heading_styles}
       if !$self->{__heading_styles}->{$style};
     $self->{__heading_styles}->{$style};
-} # heading_level
+}    # heading_level
 
-sub is_ul_list_line ($%) {
-    my $self            = shift;
+sub is_ul_list_line ($%)
+{
+    my $self = shift;
     my %args = (
-	line=>undef,
-	@_
-	);
-    my $line	= $args{line};
+        line => undef,
+        @_
+    );
+    my $line = $args{line};
 
     my ($prefix, $number, $rawprefix, $term) = $self->listprefix($line);
     if ($prefix && !$number)
     {
-	return 1;
+        return 1;
     }
     return 0;
 }
 
-sub is_heading ($%) {
-    my $self            = shift;
+sub is_heading ($%)
+{
+    my $self = shift;
     my %args = (
-	line_ref=>undef,
-	next_ref=>undef,
-	@_
-	);
-    my $line_ref        = $args{line_ref};
-    my $next_ref        = $args{next_ref};
+        line_ref => undef,
+        next_ref => undef,
+        @_
+    );
+    my $line_ref = $args{line_ref};
+    my $next_ref = $args{next_ref};
 
-    if (${$line_ref} !~ /^\s*$/
-	&& !$self->is_ul_list_line(line=>${$line_ref})
-	&& defined $next_ref
-	&& ${$next_ref} =~ /^\s*[-=*.~+]+\s*$/)
+    if (   ${$line_ref} !~ /^\s*$/
+        && !$self->is_ul_list_line(line => ${$line_ref})
+        && defined $next_ref
+        && ${$next_ref} =~ /^\s*[-=*.~+]+\s*$/)
     {
-	my ($hoffset, $heading) = ${$line_ref} =~ /^(\s*)(.+)$/;
-	$hoffset = "" unless defined($hoffset);
-	$heading = "" unless defined($heading);
-	# Unescape chars so we get an accurate length
-	$heading =~ s/&[^;]+;/X/g;
-	my ($uoffset, $underline) = ${$next_ref} =~ /^(\s*)(\S+)\s*$/;
-	$uoffset   = "" unless defined($uoffset);
-	$underline = "" unless defined($underline);
-	my ($lendiff, $offsetdiff);
-	$lendiff = length($heading) - length($underline);
-	$lendiff *= -1 if $lendiff < 0;
+        my ($hoffset, $heading) = ${$line_ref} =~ /^(\s*)(.+)$/;
+        $hoffset = "" unless defined($hoffset);
+        $heading = "" unless defined($heading);
+        # Unescape chars so we get an accurate length
+        $heading =~ s/&[^;]+;/X/g;
+        my ($uoffset, $underline) = ${$next_ref} =~ /^(\s*)(\S+)\s*$/;
+        $uoffset   = "" unless defined($uoffset);
+        $underline = "" unless defined($underline);
+        my ($lendiff, $offsetdiff);
+        $lendiff = length($heading) - length($underline);
+        $lendiff *= -1 if $lendiff < 0;
 
-	$offsetdiff = length($hoffset) - length($uoffset);
-	$offsetdiff *= -1 if $offsetdiff < 0;
-	if (($lendiff <= $self->{underline_length_tolerance})
-		|| ($offsetdiff <= $self->{underline_offset_tolerance}))
-	{
-	    return 1;
-	}
+        $offsetdiff = length($hoffset) - length($uoffset);
+        $offsetdiff *= -1 if $offsetdiff < 0;
+        if (   ($lendiff <= $self->{underline_length_tolerance})
+            || ($offsetdiff <= $self->{underline_offset_tolerance}))
+        {
+            return 1;
+        }
     }
 
     return 0;
 
-} # is_heading
+}    # is_heading
 
 # make a heading
 # assumes is_heading is true
-sub heading ($%) {
-    my $self            = shift;
+sub heading ($%)
+{
+    my $self = shift;
     my %args = (
-	line_ref=>undef,
-	next_ref=>undef,
-	@_
-	);
-    my $line_ref        = $args{line_ref};
-    my $next_ref        = $args{next_ref};
+        line_ref => undef,
+        next_ref => undef,
+        @_
+    );
+    my $line_ref = $args{line_ref};
+    my $next_ref = $args{next_ref};
 
     my ($hoffset, $heading) = ${$line_ref} =~ /^(\s*)(.+)$/;
     $hoffset = "" unless defined($hoffset);
@@ -3654,60 +4043,70 @@ sub heading ($%) {
 
     # Call it a different style if the heading is in all caps.
     $underline .= "C" if $self->iscaps(${$line_ref});
-    ${$next_ref} = " ";    # Eat the underline
+    ${$next_ref} = " ";           # Eat the underline
     $self->{__heading_level} = $self->heading_level($underline);
-    if ($self->{escape_HTML_chars}) {
-	${$line_ref} = escape(${$line_ref});
+    if ($self->{escape_HTML_chars})
+    {
+        ${$line_ref} = escape(${$line_ref});
     }
     $self->tagline("H" . $self->{__heading_level}, $line_ref);
     $self->anchor_heading($self->{__heading_level}, $line_ref);
-} # heading
+}    # heading
 
 # check if the given line matches a custom heading
-sub is_custom_heading ($%) {
-    my $self            = shift;
+sub is_custom_heading ($%)
+{
+    my $self = shift;
     my %args = (
-	line=>undef,
-	@_
-	);
-    my $line  = $args{line};
+        line => undef,
+        @_
+    );
+    my $line = $args{line};
 
-    foreach my $reg (@{$self->{custom_heading_regexp}}) {
-	return 1 if ($line =~ /$reg/);
+    foreach my $reg (@{$self->{custom_heading_regexp}})
+    {
+        return 1 if ($line =~ /$reg/);
     }
     return 0;
-} # is_custom_heading
+}    # is_custom_heading
 
-sub custom_heading ($%) {
-    my $self            = shift;
+sub custom_heading ($%)
+{
+    my $self = shift;
     my %args = (
-	line_ref=>undef,
-	@_
-	);
-    my $line_ref  = $args{line_ref};
+        line_ref => undef,
+        @_
+    );
+    my $line_ref = $args{line_ref};
 
     my $level;
     my $i = 0;
-    foreach my $reg (@{$self->{custom_heading_regexp}}) {
-        if (${$line_ref} =~ /$reg/) {
-            if ($self->{explicit_headings}) {
+    foreach my $reg (@{$self->{custom_heading_regexp}})
+    {
+        if (${$line_ref} =~ /$reg/)
+        {
+            if ($self->{explicit_headings})
+            {
                 $level = $i + 1;
             }
-            else {
+            else
+            {
                 $level = $self->heading_level("Cust" . $i);
             }
-	    if ($self->{escape_HTML_chars}) {
-		${$line_ref} = escape(${$line_ref});
-	    }
+            if ($self->{escape_HTML_chars})
+            {
+                ${$line_ref} = escape(${$line_ref});
+            }
             $self->tagline("H" . $level, $line_ref);
             $self->anchor_heading($level, $line_ref);
             last;
         }
-    	$i++;
+        $i++;
     }
-} # custom_heading
+}    # custom_heading
 
-sub unhyphenate_para ($$) {
+sub unhyphenate_para ($$)
+{
     my $self     = shift;
     my $para_ref = shift;
 
@@ -3724,9 +4123,10 @@ sub unhyphenate_para ($$) {
       /(\s*)([^\W\d_]*)\-\n(\s*)([^\W\d_]+[\)\}\]\.,:;\'\"\>]*\s*)/s;
     ${$para_ref} =~
 s/(\s*)([^\W\d_]*)\-\n(\s*)([^\W\d_]+[\)\}\]\.,:;\'\"\>]*\s*)/$1$2$4\n$3/gs;
-} # unhyphenate_para
+}    # unhyphenate_para
 
-sub tagline ($$$) {
+sub tagline ($$$)
+{
     my $self     = shift;
     my $tag      = shift;
     my $line_ref = shift;
@@ -3735,153 +4135,175 @@ sub tagline ($$$) {
     my $tag1 = $self->get_tag($tag);
     my $tag2 = $self->close_tag($tag);
     ${$line_ref} =~ s/^\s*(.*)$/${tag1}$1${tag2}\n/;
-} # tagline
+}    # tagline
 
-sub iscaps {
+sub iscaps
+{
     my $self = shift;
     local ($_) = @_;
 
     my $min_caps_len = $self->{min_caps_length};
 
     # This is ugly, but I don't know a better way to do it.
-    # (And, yes, I could use the literal characters instead of the 
+    # (And, yes, I could use the literal characters instead of the
     # numeric codes, but this keeps the script 8-bit clean, which will
     # save someone a big headache when they transfer via ASCII ftp.
 /^[^a-z\341\343\344\352\353\354\363\370\337\373\375\342\345\347\350\355\357\364\365\376\371\377\340\346\351\360\356\361\362\366\372\374<]*[A-Z\300\301\302\303\304\305\306\307\310\311\312\313\314\315\316\317\320\321\322\323\324\325\326\330\331\332\333\334\335\336]{$min_caps_len,}[^a-z\341\343\344\352\353\354\363\370\337\373\375\342\345\347\350\355\357\364\365\376\371\377\340\346\351\360\356\361\362\366\372\374<]*$/;
-} # iscaps
+}    # iscaps
 
-sub caps {
-    my $self            = shift;
+sub caps
+{
+    my $self = shift;
     my %args = (
-	line_ref=>undef,
-	line_action_ref=>undef,
-	@_
-	);
+        line_ref        => undef,
+        line_action_ref => undef,
+        @_
+    );
     my $line_ref        = $args{line_ref};
     my $line_action_ref = $args{line_action_ref};
 
-    if ($self->{caps_tag}
-	&& $self->iscaps(${$line_ref})) {
+    if (   $self->{caps_tag}
+        && $self->iscaps(${$line_ref}))
+    {
         $self->tagline($self->{caps_tag}, $line_ref);
         ${$line_action_ref} |= $CAPS;
     }
-} # caps
+}    # caps
 
-sub do_delim {
-    my $self            = shift;
+sub do_delim
+{
+    my $self = shift;
     my %args = (
-	line_ref=>undef,
-	line_action_ref=>undef,
-	delim => '*',
-	tag => 'STRONG',
-	@_
-	);
+        line_ref        => undef,
+        line_action_ref => undef,
+        delim           => '*',
+        tag             => 'STRONG',
+        @_
+    );
     my $line_ref        = $args{line_ref};
     my $line_action_ref = $args{line_action_ref};
-    my $delim = $args{delim};
-    my $tag = $args{tag};
-    
-    if ($delim eq '#') # special treatment of # for the #num case
+    my $delim           = $args{delim};
+    my $tag             = $args{tag};
+
+    if ($delim eq '#')    # special treatment of # for the #num case
     {
-	${$line_ref} =~ s/#([^0-9#](?![^#]*(?:<li>|<LI>|<P>|<p>))[^#]*[^# \t\n])#/<${tag}>$1<\/${tag}>/gs;
-	${$line_ref} =~ s/\B#([a-zA-Z])#\B/<${tag}>$1<\/${tag}>/gs;
+        ${$line_ref} =~
+s/#([^0-9#](?![^#]*(?:<li>|<LI>|<P>|<p>))[^#]*[^# \t\n])#/<${tag}>$1<\/${tag}>/gs;
+        ${$line_ref} =~ s/\B#([a-zA-Z])#\B/<${tag}>$1<\/${tag}>/gs;
     }
     elsif ($delim eq '^')
     {
-	${$line_ref} =~ s/\^((?![^^]*(?:<li>|<LI>|<p>|<P>))(\w|["'<>])[^^]*)\^/<${tag}>$1<\/${tag}>/gs;
-	${$line_ref} =~ s/\B\^([a-zA-Z])\^\B/<${tag}>$1<\/${tag}>/gs;
+        ${$line_ref} =~
+s/\^((?![^^]*(?:<li>|<LI>|<p>|<P>))(\w|["'<>])[^^]*)\^/<${tag}>$1<\/${tag}>/gs;
+        ${$line_ref} =~ s/\B\^([a-zA-Z])\^\B/<${tag}>$1<\/${tag}>/gs;
     }
-    elsif (length($delim) eq 1) # one-character, general
+    elsif (length($delim) eq 1)    # one-character, general
     {
-	${$line_ref} =~ s/(?<![${delim}])[${delim}](?![^${delim}]*(?:<li>|<LI>|<p>|<P>))((\w|["'<>])[^${delim}]*)[${delim}]/<${tag}>$1<\/${tag}>/gs;
-	${$line_ref} =~ s/\B[${delim}]([a-zA-Z])[${delim}]\B/<${tag}>$1<\/${tag}>/gs;
+        ${$line_ref} =~
+s/(?<![${delim}])[${delim}](?![^${delim}]*(?:<li>|<LI>|<p>|<P>))((\w|["'<>])[^${delim}]*)[${delim}]/<${tag}>$1<\/${tag}>/gs;
+        ${$line_ref} =~
+          s/\B[${delim}]([a-zA-Z])[${delim}]\B/<${tag}>$1<\/${tag}>/gs;
     }
     else
     {
-	${$line_ref} =~ s/(?<!${delim})${delim}((\w|["'])(\w|[-\s\.;:,!?"'])*[^\s])${delim}/<${tag}>$1<\/${tag}>/gs;
-	${$line_ref} =~ s/${delim}]([a-zA-Z])${delim}/<${tag}>$1<\/${tag}>/gs;
+        ${$line_ref} =~
+s/(?<!${delim})${delim}((\w|["'])(\w|[-\s\.;:,!?"'])*[^\s])${delim}/<${tag}>$1<\/${tag}>/gs;
+        ${$line_ref} =~ s/${delim}]([a-zA-Z])${delim}/<${tag}>$1<\/${tag}>/gs;
     }
-} # do_delim
+}    # do_delim
 
 # Convert very simple globs to regexps
-sub glob2regexp {
+sub glob2regexp
+{
     my ($glob) = @_;
 
     # Escape funky chars
     $glob =~ s/[^\w\[\]\*\?\|\\]/\\$&/g;
     my ($regexp, $i, $len, $escaped) = ("", 0, length($glob), 0);
 
-    for (; $i < $len ; $i++) {
+    for (; $i < $len; $i++)
+    {
         my $char = substr($glob, $i, 1);
-        if ($escaped) {
+        if ($escaped)
+        {
             $escaped = 0;
             $regexp .= $char;
             next;
         }
-        if ($char eq "\\") {
+        if ($char eq "\\")
+        {
             $escaped = 1;
             next;
             $regexp .= $char;
         }
-        if ($char eq "?") {
+        if ($char eq "?")
+        {
             $regexp .= ".";
             next;
         }
-        if ($char eq "*") {
+        if ($char eq "*")
+        {
             $regexp .= ".*";
             next;
         }
         $regexp .= $char;    # Normal character
     }
     join('', "\\b", $regexp, "\\b");
-} # glob2regexp
+}    # glob2regexp
 
-sub add_regexp_to_links_table ($$$$) {
+sub add_regexp_to_links_table ($$$$)
+{
     my $self = shift;
     my ($key, $URL, $switches) = @_;
 
     # No sense adding a second one if it's already in there.
     # It would never get used.
-    if (!$self->{__links_table}->{$key}) {
+    if (!$self->{__links_table}->{$key})
+    {
 
         # Keep track of the order they were added so we can
         # look for matches in the same order
-        push (@{$self->{__links_table_order}}, ($key));
+        push(@{$self->{__links_table_order}}, ($key));
 
         $self->{__links_table}->{$key}        = $URL;      # Put it in The Table
         $self->{__links_switch_table}->{$key} = $switches;
-	my $ind = @{$self->{__links_table_order}} - 1;
+        my $ind = @{$self->{__links_table_order}} - 1;
         print STDERR " (", $ind,
           ")\tKEY: $key\n\tVALUE: $URL\n\tSWITCHES: $switches\n\n"
           if ($self->{dict_debug} & 1);
     }
-    else {
-        if ($self->{dict_debug} & 1) {
+    else
+    {
+        if ($self->{dict_debug} & 1)
+        {
             print STDERR " Skipping entry.  Key already in table.\n";
             print STDERR "\tKEY: $key\n\tVALUE: $URL\n\n";
         }
     }
-} # add_regexp_to_links_table
+}    # add_regexp_to_links_table
 
-sub add_literal_to_links_table ($$$$) {
+sub add_literal_to_links_table ($$$$)
+{
     my $self = shift;
     my ($key, $URL, $switches) = @_;
 
     $key =~ s/(\W)/\\$1/g;    # Escape non-alphanumeric chars
     $key = "\\b$key\\b";      # Make a regexp out of it
     $self->add_regexp_to_links_table($key, $URL, $switches);
-} # add_literal_to_links_table
+}    # add_literal_to_links_table
 
-sub add_glob_to_links_table ($$$$) {
+sub add_glob_to_links_table ($$$$)
+{
     my $self = shift;
     my ($key, $URL, $switches) = @_;
 
     $self->add_regexp_to_links_table(glob2regexp($key), $URL, $switches);
-} # add_glob_to_links_table
+}    # add_glob_to_links_table
 
 # Parse the dictionary file.
 # (see also load_dictionary_links, for things that were stripped)
-sub parse_dict ($$$) {
+sub parse_dict ($$$)
+{
     my $self = shift;
 
     my ($dictfile, $dict) = @_;
@@ -3889,7 +4311,8 @@ sub parse_dict ($$$) {
     print STDERR "Parsing dictionary file $dictfile\n"
       if ($self->{dict_debug} & 1);
 
-    if ($dict =~ /->\s*->/) {
+    if ($dict =~ /->\s*->/)
+    {
         my $message = "Two consecutive '->'s found in $dictfile\n";
         my $near;
 
@@ -3900,26 +4323,27 @@ sub parse_dict ($$$) {
     }
 
     my ($key, $URL, $switches, $options);
-    while ($dict =~ /\s*(.+)\s+\-+([iehos]+\-+)?\>\s*(.*\S+)\s*\n/ig) {
+    while ($dict =~ /\s*(.+)\s+\-+([iehos]+\-+)?\>\s*(.*\S+)\s*\n/ig)
+    {
         $key      = $1;
         $options  = $2;
         $options  = "" unless defined($options);
         $URL      = $3;
         $switches = 0;
-	# Case insensitivity
+        # Case insensitivity
         $switches += $LINK_NOCASE if $options =~ /i/i;
-	# Evaluate as Perl code
+        # Evaluate as Perl code
         $switches += $LINK_EVAL if $options =~ /e/i;
-	# provides HTML, not just URL
+        # provides HTML, not just URL
         $switches += $LINK_HTML if $options =~ /h/i;
-	# Only do this link once
+        # Only do this link once
         $switches += $LINK_ONCE if $options =~ /o/i;
-	# Only do this link once per section
+        # Only do this link once per section
         $switches += $LINK_SECT_ONCE if $options =~ /s/i;
 
-        $key =~ s/\s*$//;                      # Chop trailing whitespace
+        $key =~ s/\s*$//;    # Chop trailing whitespace
 
-        if ($key =~ m|^/|)                     # Regexp
+        if ($key =~ m|^/|)   # Regexp
         {
             $key = substr($key, 1);
             $key =~ s|/$||;    # Allow them to forget the closing /
@@ -3932,19 +4356,22 @@ sub parse_dict ($$$) {
             $key =~ s|/|\\/|g;    # Escape all slashes
             $self->add_regexp_to_links_table($key, $URL, $switches);
         }
-        elsif ($key =~ /\"/) {
+        elsif ($key =~ /\"/)
+        {
             $key = substr($key, 1);
-            $key =~ s/\"$//;    # Allow them to forget the closing "
+            $key =~ s/\"$//;      # Allow them to forget the closing "
             $self->add_literal_to_links_table($key, $URL, $switches);
         }
-        else {
+        else
+        {
             $self->add_glob_to_links_table($key, $URL, $switches);
         }
     }
 
-} # parse_dict
+}    # parse_dict
 
-sub setup_dict_checking ($) {
+sub setup_dict_checking ($)
+{
     my $self = shift;
 
     # now create the replace funcs and precomile the regexes
@@ -3952,31 +4379,33 @@ sub setup_dict_checking ($) {
     my ($href, $r_sw);
     my @subs;
     my $i = 0;
-    foreach my $pattern (@{$self->{__links_table_order}}) {
+    foreach my $pattern (@{$self->{__links_table_order}})
+    {
         $switches = $self->{__links_switch_table}->{$pattern};
 
         $href = $self->{__links_table}->{$pattern};
 
         if (!($switches & $LINK_HTML))
-	{
-	    $href =~ s#/#\\/#g;
-	    $href = ($self->{lower_case_tags}
-	    	? join('', '<a href="', $href, '">$&<\\/a>')
-	    	: join('', '<A HREF="', $href, '">$&<\\/A>')
-	    );
-	}
-	else
-	{
-	    # change the uppercase tags to lower case
-	    if ($self->{lower_case_tags})
-	    {
-		$href =~ s#(</)([A-Z]*)(>)#${1}\L${2}${3}#g;
-		$href =~ s/(<)([A-Z]*)(>)/${1}\L${2}${3}/g;
-		# and the anchors
-		$href =~ s/(<)(A\s*HREF)([^>]*>)/$1\L$2$3/g;
-	    }
-	    $href =~ s#/#\\/#g;
-	}
+        {
+            $href =~ s#/#\\/#g;
+            $href = (
+                $self->{lower_case_tags}
+                ? join('', '<a href="', $href, '">$&<\\/a>')
+                : join('', '<A HREF="', $href, '">$&<\\/A>')
+            );
+        }
+        else
+        {
+            # change the uppercase tags to lower case
+            if ($self->{lower_case_tags})
+            {
+                $href =~ s#(</)([A-Z]*)(>)#${1}\L${2}${3}#g;
+                $href =~ s/(<)([A-Z]*)(>)/${1}\L${2}${3}/g;
+                # and the anchors
+                $href =~ s/(<)(A\s*HREF)([^>]*>)/$1\L$2$3/g;
+            }
+            $href =~ s#/#\\/#g;
+        }
 
         $r_sw = "s";    # Options for replacing
         $r_sw .= "i" if ($switches & $LINK_NOCASE);
@@ -3990,7 +4419,7 @@ sub setup_dict_checking ($) {
         # as if it were perl code, because sometimes the $href
         # contains things which need to be evaluated, such as $& or $1,
         # not just those cases where we have a "e" switch.
-        my $code =<<EOT;
+        my $code = <<EOT;
 \$self->{__repl_code}->[$i] =
 sub {
 my \$al = shift;
@@ -3999,98 +4428,112 @@ return \$al;
 };
 EOT
         print STDERR $code if ($self->{dict_debug} & 2);
-	push @subs, $code;
+        push @subs, $code;
 
         # compile searching pattern
         if ($switches & $LINK_NOCASE)    # i
         {
             $self->{__search_patterns}->[$i] = qr/$pattern/si;
         }
-        else {
+        else
+        {
             $self->{__search_patterns}->[$i] = qr/$pattern/s;
         }
-    	$i++;
+        $i++;
     }
     # now eval the replacements code string
     my $codes = join('', @subs);
     eval "$codes";
-} # setup_dict_checking
+}    # setup_dict_checking
 
-sub in_link_context ($$$) {
-    my $self		 = shift;
+sub in_link_context ($$$)
+{
+    my $self = shift;
     my ($match, $before) = @_;
     return 1 if $match =~ m@</?A>@i;    # No links allowed inside match
 
     my ($final_open, $final_close);
-    if ($self->{lower_case_tags}) {
-	$final_open  = rindex($before, "<a ") - $[;
-	$final_close = rindex($before, "</a>") - $[;
+    if ($self->{lower_case_tags})
+    {
+        $final_open  = rindex($before, "<a ") - $[;
+        $final_close = rindex($before, "</a>") - $[;
     }
-    else {
-	$final_open  = rindex($before, "<A ") - $[;
-	$final_close = rindex($before, "</A>") - $[;
+    else
+    {
+        $final_open  = rindex($before, "<A ") - $[;
+        $final_close = rindex($before, "</A>") - $[;
     }
 
-    return 1 if ($final_open >= 0)      # Link opened
-      && (($final_close < 0)            # and not closed    or
+    return 1 if ($final_open >= 0)    # Link opened
+      && (
+        ($final_close < 0)            # and not closed    or
         || ($final_open > $final_close)
-    );    # one opened after last close
+      );                              # one opened after last close
 
-    # Now check to see if we're inside a tag, matching a tag name, 
+    # Now check to see if we're inside a tag, matching a tag name,
     # or attribute name or value
     $final_open  = rindex($before, "<") - $[;
     $final_close = rindex($before, ">") - $[;
-    ($final_open >= 0)    # Tag opened
-      && (($final_close < 0)    # and not closed    or
+    ($final_open >= 0)                # Tag opened
+      && (
+        ($final_close < 0)            # and not closed    or
         || ($final_open > $final_close)
-    );    # one opened after last close
-} # in_link_context
+      );                              # one opened after last close
+}    # in_link_context
 
 # apply links and formatting to this paragraph
-sub apply_links ($%) {
-    my $self            = shift;
+sub apply_links ($%)
+{
+    my $self = shift;
     my %args = (
-	para_ref=>undef,
-	para_action_ref=>undef,
-	@_
-	);
+        para_ref        => undef,
+        para_action_ref => undef,
+        @_
+    );
     my $para_ref        = $args{para_ref};
     my $para_action_ref = $args{para_action_ref};
 
     if ($self->{make_links}
-	&& @{$self->{__links_table_order}})
+        && @{$self->{__links_table_order}})
     {
-	$self->check_dictionary_links(line_ref=>$para_ref,
-	    line_action_ref=>$para_action_ref);
+        $self->check_dictionary_links(
+            line_ref        => $para_ref,
+            line_action_ref => $para_action_ref
+        );
     }
     if ($self->{bold_delimiter})
     {
-	my $tag = ($self->{lower_case_tags} ? 'strong' : 'STRONG');
-	$self->do_delim(line_ref=>$para_ref,
-			line_action_ref=>$para_action_ref,
-			delim=>$self->{bold_delimiter},
-			tag=>$tag);
+        my $tag = ($self->{lower_case_tags} ? 'strong' : 'STRONG');
+        $self->do_delim(
+            line_ref        => $para_ref,
+            line_action_ref => $para_action_ref,
+            delim           => $self->{bold_delimiter},
+            tag             => $tag
+        );
     }
     if ($self->{italic_delimiter})
     {
-	my $tag = ($self->{lower_case_tags} ? 'em' : 'EM');
-	$self->do_delim(line_ref=>$para_ref,
-			line_action_ref=>$para_action_ref,
-			delim=>$self->{italic_delimiter},
-			tag=>$tag);
+        my $tag = ($self->{lower_case_tags} ? 'em' : 'EM');
+        $self->do_delim(
+            line_ref        => $para_ref,
+            line_action_ref => $para_action_ref,
+            delim           => $self->{italic_delimiter},
+            tag             => $tag
+        );
     }
 
-} # apply_links
+}    # apply_links
 
 # Check (and alter if need be) the bits in this line matching
 # the patterns in the link dictionary.
-sub check_dictionary_links ($%) {
-    my $self            = shift;
+sub check_dictionary_links ($%)
+{
+    my $self = shift;
     my %args = (
-	line_ref=>undef,
-	line_action_ref=>undef,
-	@_
-	);
+        line_ref        => undef,
+        line_action_ref => undef,
+        @_
+    );
     my $line_ref        = $args{line_ref};
     my $line_action_ref = $args{line_action_ref};
 
@@ -4099,7 +4542,8 @@ sub check_dictionary_links ($%) {
 
     # for each pattern, check and alter the line
     my $i = 0;
-    foreach my $pattern (@{$self->{__links_table_order}}) {
+    foreach my $pattern (@{$self->{__links_table_order}})
+    {
         $switches = $self->{__links_switch_table}->{$pattern};
 
         # check the pattern
@@ -4110,12 +4554,12 @@ sub check_dictionary_links ($%) {
                 && ${$line_ref} =~ $self->{__search_patterns}->[$i])
             {
                 $self->{__done_with_link}->[$i] = 1;
-		$line_with_links .= $`;
-                $linkme    = $&;
+                $line_with_links .= $`;
+                $linkme = $&;
 
-		${$line_ref} = $';
+                ${$line_ref} = $';
                 if (!$self->in_link_context($linkme, $line_with_links))
-		{
+                {
                     print STDERR "Link rule $i matches $linkme\n"
                       if ($self->{dict_debug} & 4);
 
@@ -4135,12 +4579,12 @@ sub check_dictionary_links ($%) {
                 && ${$line_ref} =~ $self->{__search_patterns}->[$i])
             {
                 $self->{__done_with_sect_link}->[$i] = 1;
-		$line_with_links .= $`;
-                $linkme    = $&;
+                $line_with_links .= $`;
+                $linkme = $&;
 
-		${$line_ref} = $';
+                ${$line_ref} = $';
                 if (!$self->in_link_context($linkme, $line_with_links))
-		{
+                {
                     print STDERR "Link rule $i matches $linkme\n"
                       if ($self->{dict_debug} & 4);
 
@@ -4153,15 +4597,17 @@ sub check_dictionary_links ($%) {
             }
             ${$line_ref} = $line_with_links . ${$line_ref};
         }
-        else {
+        else
+        {
             $line_with_links = '';
-            while (${$line_ref} =~ $self->{__search_patterns}->[$i]) {
-		$line_with_links .= $`;
-                $linkme    = $&;
+            while (${$line_ref} =~ $self->{__search_patterns}->[$i])
+            {
+                $line_with_links .= $`;
+                $linkme = $&;
 
-		${$line_ref} = $';
-                if (!$self->in_link_context($linkme, $line_with_links)) 
-		{
+                ${$line_ref} = $';
+                if (!$self->in_link_context($linkme, $line_with_links))
+                {
                     print STDERR "Link rule $i matches $linkme\n"
                       if ($self->{dict_debug} & 4);
 
@@ -4174,43 +4620,45 @@ sub check_dictionary_links ($%) {
             }
             ${$line_ref} = $line_with_links . ${$line_ref};
         }
-    	$i++;
+        $i++;
     }
     ${$line_action_ref} |= $LINK;
-} # check_dictionary_links
+}    # check_dictionary_links
 
-sub load_dictionary_links ($) {
+sub load_dictionary_links ($)
+{
     my $self = shift;
 
     @{$self->{__links_table_order}} = ();
     %{$self->{__links_table}}       = ();
 
     my $dict;
-    foreach $dict (@{$self->{links_dictionaries}}) {
-	next unless $dict;
-	open(DICT, "$dict") || die "Can't open Dictionary file $dict\n";
+    foreach $dict (@{$self->{links_dictionaries}})
+    {
+        next unless $dict;
+        open(DICT, "$dict") || die "Can't open Dictionary file $dict\n";
 
-	my @lines = ();
-	while (<DICT>)
-	{
-	    # skip lines that start with '#'
-	    next if /^\#/;          
-	    # skip lines that end with unescaped ':'
-	    next if /^.*[^\\]:\s*$/;
-	    push @lines, $_;
-	}
-	close(DICT);
-	my $contents = join('', @lines);
-	$self->parse_dict($dict, $contents);
+        my @lines = ();
+        while (<DICT>)
+        {
+            # skip lines that start with '#'
+            next if /^\#/;
+            # skip lines that end with unescaped ':'
+            next if /^.*[^\\]:\s*$/;
+            push @lines, $_;
+        }
+        close(DICT);
+        my $contents = join('', @lines);
+        $self->parse_dict($dict, $contents);
     }
     # last of all, do the system dictionary, already read in from DATA
     if ($self->{__global_links_data})
     {
-	$self->parse_dict("DATA", $self->{__global_links_data});
+        $self->parse_dict("DATA", $self->{__global_links_data});
     }
 
     $self->setup_dict_checking();
-} # load_dictionary_links
+}    # load_dictionary_links
 
 # do_file_start
 #    extra stuff needed for the beginning
@@ -4219,133 +4667,165 @@ sub load_dictionary_links ($) {
 #   $para
 # Return:
 #   processed $para string
-sub do_file_start ($$$) {
+sub do_file_start ($$$)
+{
     my $self      = shift;
     my $outhandle = shift;
     my $para      = shift;
 
-    if (!$self->{extract}) {
-        my @para_lines = split (/\n/, $para);
+    if (!$self->{extract})
+    {
+        my @para_lines = split(/\n/, $para);
         my $first_line = $para_lines[0];
 
-	if ($self->{doctype})
-	{
-	    if ($self->{xhtml})
-	    {
-		print $outhandle '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"', "\n";
-		print $outhandle '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">', "\n";
-	    }
-	    else
-	    {
-		print $outhandle '<!DOCTYPE HTML PUBLIC "', $self->{doctype}, "\">\n";
-	    }
-	}
+        if ($self->{doctype})
+        {
+            if ($self->{xhtml})
+            {
+                print $outhandle
+'<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"',
+                  "\n";
+                print $outhandle
+                  '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">',
+                  "\n";
+            }
+            else
+            {
+                print $outhandle '<!DOCTYPE HTML PUBLIC "', $self->{doctype},
+                  "\">\n";
+            }
+        }
         print $outhandle $self->get_tag('HTML'), "\n";
         print $outhandle $self->get_tag('HEAD'), "\n";
 
         # if --titlefirst is set and --title isn't, use the first line
         # as the title.
-        if ($self->{titlefirst} && !$self->{title}) {
+        if ($self->{titlefirst} && !$self->{title})
+        {
             my ($tit) = $first_line =~ /^ *(.*)/;    # grab first line
             $tit =~ s/ *$//;                         # strip trailing whitespace
             $tit = escape($tit) if $self->{escape_HTML_chars};
             $self->{'title'} = $tit;
         }
-        if (!$self->{title}) {
+        if (!$self->{title})
+        {
             $self->{'title'} = "";
         }
         print $outhandle $self->get_tag('TITLE'), $self->{title},
-	    $self->close_tag('TITLE'), "\n";
+          $self->close_tag('TITLE'), "\n";
 
-        if ($self->{append_head}) {
+        if ($self->{append_head})
+        {
             open(APPEND, $self->{append_head})
               || die "Failed to open ", $self->{append_head}, "\n";
-            while (<APPEND>) {
+            while (<APPEND>)
+            {
                 print $outhandle $_;
             }
             close(APPEND);
         }
 
-	if ($self->{lower_case_tags})
-	{
-	    print $outhandle $self->get_tag('META', tag_type=>'empty',
-		inside_tag=>" name=\"generator\" content=\"$PROG v$VERSION\""),
-		"\n";
-	}
-	else
-	{
-	    print $outhandle $self->get_tag('META', tag_type=>'empty',
-		inside_tag=>" NAME=\"generator\" CONTENT=\"$PROG v$VERSION\""),
-		"\n";
-	}
-	if ($self->{style_url})
-	{
-	    my $style_url = $self->{style_url};
-	    if ($self->{lower_case_tags})
-	    {
-		print $outhandle $self->get_tag('LINK', tag_type=>'empty',
-		    inside_tag=>" rel=\"stylesheet\" type=\"text/css\" href=\"$style_url\""),
-		"\n";
-	    }
-	    else
-	    {
-		print $outhandle $self->get_tag('LINK', tag_type=>'empty',
-		    inside_tag=>" REL=\"stylesheet\" TYPE=\"text/css\" HREF=\"$style_url\""),
-		"\n";
-	    }
-	}
+        if ($self->{lower_case_tags})
+        {
+            print $outhandle $self->get_tag(
+                'META',
+                tag_type   => 'empty',
+                inside_tag => " name=\"generator\" content=\"$PROG v$VERSION\""
+              ),
+              "\n";
+        }
+        else
+        {
+            print $outhandle $self->get_tag(
+                'META',
+                tag_type   => 'empty',
+                inside_tag => " NAME=\"generator\" CONTENT=\"$PROG v$VERSION\""
+              ),
+              "\n";
+        }
+        if ($self->{style_url})
+        {
+            my $style_url = $self->{style_url};
+            if ($self->{lower_case_tags})
+            {
+                print $outhandle $self->get_tag(
+                    'LINK',
+                    tag_type   => 'empty',
+                    inside_tag =>
+" rel=\"stylesheet\" type=\"text/css\" href=\"$style_url\""
+                  ),
+                  "\n";
+            }
+            else
+            {
+                print $outhandle $self->get_tag(
+                    'LINK',
+                    tag_type   => 'empty',
+                    inside_tag =>
+" REL=\"stylesheet\" TYPE=\"text/css\" HREF=\"$style_url\""
+                  ),
+                  "\n";
+            }
+        }
         print $outhandle $self->close_tag('HEAD'), "\n";
-	if ($self->{body_deco})
-	{
-	    print $outhandle $self->get_tag('BODY',
-		inside_tag=>$self->{body_deco}), "\n";
-	}
-	else
-	{
-	    print $outhandle $self->get_tag('BODY'), "\n";
-	}
+        if ($self->{body_deco})
+        {
+            print $outhandle $self->get_tag('BODY',
+                inside_tag => $self->{body_deco}), "\n";
+        }
+        else
+        {
+            print $outhandle $self->get_tag('BODY'), "\n";
+        }
     }
 
-    if ($self->{prepend_file}) {
-        if (-r $self->{prepend_file}) {
+    if ($self->{prepend_file})
+    {
+        if (-r $self->{prepend_file})
+        {
             open(PREPEND, $self->{prepend_file});
-            while (<PREPEND>) {
+            while (<PREPEND>)
+            {
                 print $outhandle $_;
             }
             close(PREPEND);
         }
-        else {
+        else
+        {
             print STDERR "Can't find or read file ", $self->{prepend_file},
               " to prepend.\n";
         }
     }
-} # do_file_start
+}    # do_file_start
 
 # do_init_call
 # certain things, like reading link dictionaries, need to be
 # done once
-sub do_init_call ($) {
-    my $self     = shift;
+sub do_init_call ($)
+{
+    my $self = shift;
 
-    if (!$self->{__call_init_done}) {
-	push (@{$self->{links_dictionaries}}, ($self->{default_link_dict}))
-	  if ($self->{make_links} && (-f $self->{default_link_dict}));
-	$self->deal_with_options();
-	if ($self->{make_links}) {
-	    $self->load_dictionary_links();
-	}
-     
-	# various initializations
-	$self->{__non_header_anchor} = 0;
-	$self->{__mode}              = 0;
-	$self->{__listnum}           = 0;
-	$self->{__list_nice_indent}       = '';
-	$self->{__list_indent}	= [];
-	$self->{__tags}		     = [];
+    if (!$self->{__call_init_done})
+    {
+        push(@{$self->{links_dictionaries}}, ($self->{default_link_dict}))
+          if ($self->{make_links} && (-f $self->{default_link_dict}));
+        $self->deal_with_options();
+        if ($self->{make_links})
+        {
+            $self->load_dictionary_links();
+        }
 
-	$self->{__call_init_done} = 1;
+        # various initializations
+        $self->{__non_header_anchor} = 0;
+        $self->{__mode}              = 0;
+        $self->{__listnum}           = 0;
+        $self->{__list_nice_indent}  = '';
+        $self->{__list_indent}       = [];
+        $self->{__tags}              = [];
+
+        $self->{__call_init_done} = 1;
     }
-} # do_init_call
+}    # do_init_call
 
 =head1 FILE FORMATS
 
@@ -4583,6 +5063,13 @@ This can also have an optional caption at the start.
                      outfile=>$html_file,
 		     title=>"Wonderful Things",
 		     mail=>1
+      );
+
+=head2 Make a pipleline
+
+    open(IN, "ls |") or die "could not open!";
+    $conv->txt2html(inhandle=>[\*IN],
+                     outfile=>'-',
       );
 
 =head1 NOTES

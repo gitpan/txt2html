@@ -9,11 +9,11 @@ txt2html - convert plain text file to HTML.
 
 =head1 VERSION
 
-This describes version B<2.41> of txt2html.
+This describes version B<2.42> of txt2html.
 
 =cut
 
-our $VERSION = '2.41';
+our $VERSION = '2.42';
 
 =head1 SYNOPSIS
 
@@ -28,7 +28,8 @@ txt2html [ --append_file I<filename> ] [ --append_head I<filename> ]
     [ --default_link_dict I<filename> ] [ --dict_debug I<n> ]
     [ --doctype I<doctype> ] [ --eight_bit_clean ] [ --escape_HTML_chars ]
     [ --explicit_headings ] [ --extract ] [ --hrule_min I<n> ]
-    [ --indent_width I<n> ] [ --indent_par_break ] { --infile I<filename> }
+    [ --indent_width I<n> ] [ --indent_par_break ]
+    { --infile I<filename> | --instring I<string> }
     [ --italic_delimiter I<string> ] { --links_dictionaries I<filename> }
     [ --link_only ] [ --lower_case_tags ] [ --mailmode ]
     [ --make_anchors ] [ --make_tables ] [ --min_caps_length I<n> ]
@@ -249,7 +250,15 @@ The name of the input file.
 This is a cumulative list argument.  If you want to process more than
 one file, just add another --infile I<file> to the list of arguments.
 Or else just add the filename without the option, after all the options.
+Note that the special file name of '-' means standard input.
+
 (default:-)
+
+=item --instring I<string>
+
+An input string.  One can either have input files or input strings,
+not both.  If you want to process more than one string, just add
+another --instring I<string> to the list of arguments.
 
 =item --italic_delimiter I<string>
 
@@ -780,6 +789,7 @@ sub init_data ($) {
     $args{quiet} = 0;
     $args{help} = 0;
     $args{infile} = [];
+    $args{instring} = [];
 
     $data_ref->{args} = \%args;
 }
@@ -826,6 +836,7 @@ sub process_args ($) {
 	'indent_width|iw=n',
 	'indent_par_break|ipb!',
 	'infile=s@',
+	'instring=s@',
 	'italic_delimiter=s',
 	'links_dictionaries|link|l=s@',
 	'link_only|linkonly|LO!',
@@ -912,8 +923,9 @@ MAIN: {
 	}
 	push @{$data{doc}->{infile}}, $df;
     }
-    # if we have no infile, assume stdin, and mark that with '-'
-    if (!@{$data{doc}->{infile}})
+    # if we have no infile, and no instring
+    # assume stdin, and mark that with '-'
+    if (!@{$data{doc}->{infile}} and !@{$data{doc}->{instring}})
     {
 	if ($data{doc}->{debug}) {
 	    print STDERR "using STDIN\n";

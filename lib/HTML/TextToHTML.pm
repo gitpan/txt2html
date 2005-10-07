@@ -9,11 +9,11 @@ HTML::TextToHTML - convert plain text file to HTML.
 
 =head1 VERSION
 
-This describes version B<2.42> of HTML::TextToHTML.
+This describes version B<2.43> of HTML::TextToHTML.
 
 =cut
 
-our $VERSION = '2.42';
+our $VERSION = '2.43';
 
 =head1 SYNOPSIS
 
@@ -4185,11 +4185,38 @@ sub do_delim
     my $delim           = $args{delim};
     my $tag             = $args{tag};
 
-    if ($delim eq '#')    # special treatment of # for the #num case
+    if ($delim eq '#')  
     {
-        ${$line_ref} =~
+        if (${$line_ref} =~ m/\B#([a-zA-Z])#\B/s)
+	{
+	    ${$line_ref} =~ s/\B#([a-zA-Z])#\B/<${tag}>$1<\/${tag}>/gs;
+	}
+	# special treatment of # for the #num case and the #link case
+	if (${$line_ref} !~ m/<[aA]/)
+	{
+	    ${$line_ref} =~
 s/#([^0-9#](?![^#]*(?:<li>|<LI>|<P>|<p>))[^#]*[^# \t\n])#/<${tag}>$1<\/${tag}>/gs;
-        ${$line_ref} =~ s/\B#([a-zA-Z])#\B/<${tag}>$1<\/${tag}>/gs;
+	}
+	else
+	{
+	    my $line_with_links = '';
+	    my $linkme = '';
+	    my $unmatched = ${$line_ref};
+	    while ($unmatched =~ 
+		   m/#([^0-9#](?![^#]*(?:<li>|<LI>|<P>|<p>))[^#]*[^# \t\n])#/s)
+	    {
+		$line_with_links .= $`;
+		$linkme = $&;
+		$unmatched = $';
+		if (!$self->in_link_context($linkme, $line_with_links))
+		{
+		    $linkme =~
+			s/#([^0-9#](?![^#]*(?:<li>|<LI>|<P>|<p>))[^#]*[^# \t\n])#/<${tag}>$1<\/${tag}>/gs;
+		}
+		$line_with_links .= $linkme;
+	    }
+	    ${$line_ref} = $line_with_links . $unmatched;
+	}
     }
     elsif ($delim eq '^')
     {

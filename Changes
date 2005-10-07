@@ -1,6 +1,9 @@
 Revision history for txt2html
 =============================
 
+2.43 Fri 7th October 2005
+	- fixed bug with interaction between #bolding# and #anchor links
+
 2.42 Wed 10th August 2005
 	- new option to txt2html script: --instring, which enables one
 to process a string instead of a file.

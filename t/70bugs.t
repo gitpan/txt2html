@@ -2,7 +2,7 @@
 
 #########################
 
-use Test::More tests => 6;
+use Test::More tests => 8;
 use HTML::TextToHTML;
 
 #########################
@@ -139,5 +139,27 @@ $result = compare('tfiles/good_heading1.html', 'heading1.html');
 ok($result, 'test file matches original example exactly');
 if ($result) {
     unlink('heading1.html');
+}
+
+#
+# bugs : link with # in it being replaced by <STRONG> tags
+#
+$result = $conv->txt2html(
+system_link_dict=>"txt2html.dict",
+default_link_dict=>"",
+make_tables=>0,
+infile=>["tfiles/links3.txt"],
+outfile=>"links3.html",
+custom_heading_regexp=>[],
+#debug=>1,
+#dict_debug=>15,
+);
+ok($result, 'converted links3.txt');
+
+# compare the files
+$result = compare('tfiles/good_links3.html', 'links3.html');
+ok($result, 'test file matches original example exactly');
+if ($result) {
+    unlink('links3.html');
 }
 

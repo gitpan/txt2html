@@ -26,6 +26,7 @@ tfiles/good_heading1.html
 tfiles/good_hyphens.html
 tfiles/good_links.html
 tfiles/good_links2.html
+tfiles/good_links3.html
 tfiles/good_list-2.html
 tfiles/good_list-3.html
 tfiles/good_list-4.html
@@ -50,6 +51,7 @@ tfiles/heading1.txt
 tfiles/hyphens.txt
 tfiles/links.txt
 tfiles/links2.txt
+tfiles/links3.txt
 tfiles/list-2.txt
 tfiles/list-3.txt
 tfiles/list-4.txt

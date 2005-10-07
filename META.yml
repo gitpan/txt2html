@@ -1,6 +1,6 @@
 ---
 name: txt2html
-version: 2.42
+version: 2.43
 author:
   - Kathryn Andersen
 abstract: convert plain text file to HTML.
@@ -18,5 +18,5 @@ build_requires:
 provides:
   HTML::TextToHTML:
     file: lib/HTML/TextToHTML.pm
-    version: 2.42
+    version: 2.43
 generated_by: Module::Build version 0.2611

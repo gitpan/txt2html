@@ -1,8 +1,9 @@
 Revision history for txt2html
 =============================
 
-2.44 ? 2005
+2.44 Tue 17th January 2006
 	- fixed bug with delimiter tables
+	- minor documentation fixes
 
 2.43 Fri 7th October 2005
 	- fixed bug with interaction between #bolding# and #anchor links

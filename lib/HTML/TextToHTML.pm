@@ -9,11 +9,11 @@ HTML::TextToHTML - convert plain text file to HTML.
 
 =head1 VERSION
 
-This describes version B<2.4301> of HTML::TextToHTML.
+This describes version B<2.44> of HTML::TextToHTML.
 
 =cut
 
-our $VERSION = '2.4301';
+our $VERSION = '2.44';
 
 =head1 SYNOPSIS
 

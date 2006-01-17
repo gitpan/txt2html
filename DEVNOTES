@@ -81,10 +81,10 @@ Then do
 	make cpfiles
 	make
 	cvs commit
+	cd ..
+	make install
 
-Then log in to txt2html.sourceforge.net, cd to the
-/home/groups/t/tx/txt2html directory, and run "getweb" and this
-will update the website from CVS.
+(The last copies it over with rsync)
 
 One should also post a message to the mailing list.
 

@@ -9,11 +9,11 @@ HTML::TextToHTML - convert plain text file to HTML.
 
 =head1 VERSION
 
-This describes version B<2.43> of HTML::TextToHTML.
+This describes version B<2.4301> of HTML::TextToHTML.
 
 =cut
 
-our $VERSION = '2.43';
+our $VERSION = '2.4301';
 
 =head1 SYNOPSIS
 
@@ -3149,10 +3149,11 @@ sub is_delim_table ($%)
     if ($rows[0] =~ /^\s*([^a-zA-Z0-9])/)
     {
         $delim = $1;
-        # have to get rid of ^ and []
+        # have to get rid of ^ and [] and \
         $delim =~ s/\^//g;
         $delim =~ s/\[//g;
         $delim =~ s/\]//g;
+        $delim =~ s/\\//g;
         if (!$delim)    # no delimiter after all
         {
             return 0;

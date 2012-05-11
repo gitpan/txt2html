@@ -19,7 +19,7 @@ pm_to_blib
 ^Build$
 
 # development files
-^mod_devaid.conf$
+^dist.ini$
 ^profiling/
 
 # temp, old, backup files

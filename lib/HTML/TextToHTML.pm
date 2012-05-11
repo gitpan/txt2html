@@ -1,4 +1,7 @@
 package HTML::TextToHTML;
+{
+  $HTML::TextToHTML::VERSION = '2.52';
+}
 use 5.8.1;
 use strict;
 #------------------------------------------------------------------------
@@ -9,11 +12,7 @@ HTML::TextToHTML - convert plain text file to HTML.
 
 =head1 VERSION
 
-This describes version B<2.51> of HTML::TextToHTML.
-
-=cut
-
-our $VERSION = '2.51';
+version 2.52
 
 =head1 SYNOPSIS
 
@@ -5196,7 +5195,7 @@ sub do_file_start ($$$)
             print $outhandle $self->get_tag(
                 'meta',
                 tag_type   => TAG_EMPTY,
-                inside_tag => " name=\"generator\" content=\"$PROG v$VERSION\""
+                inside_tag => " name=\"generator\" content=\"$PROG v$HTML::TextToHTML::VERSION\""
               ),
               "\n";
         }
@@ -5205,7 +5204,7 @@ sub do_file_start ($$$)
             print $outhandle $self->get_tag(
                 'meta',
                 tag_type   => TAG_EMPTY,
-                inside_tag => " NAME=\"generator\" CONTENT=\"$PROG v$VERSION\""
+                inside_tag => " NAME=\"generator\" CONTENT=\"$PROG v$HTML::TextToHTML::VERSION\""
               ),
               "\n";
         }

@@ -1,27 +1,28 @@
 ---
-name: txt2html
-version: 2.51
+abstract: 'convert plain text file to HTML.'
 author:
-  - Kathryn Andersen
-abstract: convert plain text file to HTML.
-license: perl
-resources:
-  license: http://dev.perl.org/licenses/
+  - 'Kathryn Andersen <perlkat@katspace.org>'
+build_requires:
+  File::Find: 0
+  File::Temp: 0
+  Module::Build: 0.3601
+  Test::More: 0
+  warnings: 0
+configure_requires:
+  Module::Build: 0.3601
+dynamic_config: 0
+generated_by: 'Dist::Zilla version 4.300009, CPAN::Meta::Converter version 2.120351'
+license: gpl
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: txt2html
 requires:
   File::Basename: 0
-  Getopt::ArgvFile: 0
   Getopt::Long: 0
   Pod::Usage: 0
   YAML::Syck: 0
+  constant: 0
   perl: 5.8.1
-build_requires:
-  Module::Build: 0.26
-  Test::More: 0
-provides:
-  HTML::TextToHTML:
-    file: lib/HTML/TextToHTML.pm
-    version: 2.51
-generated_by: Module::Build version 0.2808
-meta-spec:
-  url: http://module-build.sourceforge.net/META-spec-v1.2.html
-  version: 1.2
+  strict: 0
+version: 2.52

@@ -1,29 +1,20 @@
 Developer Notes
 ===============
 
+This uses Dist::Zilla for building/testing/release.
+
 Changing the version
 --------------------
 
-1. Edit the version.txt file to increment the version
-2. "moddevaid VERSION" (this changes the version in all the needed files)
-3. "Build distclean"
-4. "perl Build.PL"
-5. "Build"
-6. "Build test"
+1. Edit the dist.ini file to increment the version
+2. Replace the old version number with the new version in the tfiles files.
+3. "dzil test"
 
-You need to rebuild the Build file because Module::Build sets the version
-information when the Build file is built, rather than it being dynamic.
-
-Generating TODO and README
+Generating README
 --------------------------
 
-Make the todo changes with devtodo (tda, tdd, todo etc).
-
-moddevaid TODO >TODO
-
 Make the README changes in HTML/TextToHTML.pm
-
-moddevaid README >README
+Dist::Zilla will generate the README from that.
 
 Adding Options
 --------------
@@ -49,11 +40,11 @@ Release Notes
 
 Before releasing, don't forget to run
 
-	./Build
-	./Build test
-	./Build dist
+	dzil test
+	dzil build # for a sanity check of the build
+	dzil release
 
-(and usually "Build install" as well)
+(and usually "dzil install" as well)
 
 This bundle is released in three different external places:
 - CPAN
@@ -63,12 +54,12 @@ This bundle is released in three different external places:
 CPAN Release
 ------------
 
-Log in to PAUSE, and browser-upload the .tar.gz file.  Simple, huh?
+Dist::Zilla will do the CPAN release as part of the release process.
 
 Sourceforge Release
 -------------------
 
-Do a CVS commit if you haven't already.
+Do a git push if you haven't already.
 
 Go to the Admin/Files section and follow the instructions.
 You will need to ftp upload the .tar.gz file to upload.sourceforge.net
@@ -80,13 +71,14 @@ Then do
 	make del_cpfiles
 	make cpfiles
 	make
-	svn commit
+	git commit
+        git push
 	cd ..
 	make install
 
 (The last copies it over with rsync)
 
-One should also post a message to the mailing list.
+One should also post a message to the txt2html mailing list.
 
 FreshMeat Release
 -----------------

@@ -9,11 +9,7 @@ txt2html - convert plain text file to HTML.
 
 =head1 VERSION
 
-This describes version B<2.51> of txt2html.
-
-=cut
-
-our $VERSION = '2.51';
+version 2.52
 
 =head1 SYNOPSIS
 

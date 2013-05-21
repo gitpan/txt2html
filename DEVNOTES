@@ -71,6 +71,7 @@ Then do
 	make del_cpfiles
 	make cpfiles
 	make
+        git add
 	git commit
         git push
 	cd ..

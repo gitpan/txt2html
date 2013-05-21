@@ -9,7 +9,7 @@ txt2html - convert plain text file to HTML.
 
 =head1 VERSION
 
-version 2.52
+version 2.5201
 
 =head1 SYNOPSIS
 
@@ -910,19 +910,19 @@ sub process_args ($) {
 
     if ($args_ref->{'version'})
     {
-	print STDERR "$0 version: $VERSION\n";
+	print STDERR "$0 version: $HTML::TextToHTML::VERSION\n";
 	exit 0;
     }
     if ($args_ref->{'manpage'})
     {
-	pod2usage({ -message => "$0 version $VERSION",
+	pod2usage({ -message => "$0 version $HTML::TextToHTML::VERSION",
 		    -exitval => 0,
 		    -verbose => 2,
 	    });
     }
     if ($args_ref->{'help'})
     {
-	pod2usage({ -message => "$0 version $VERSION",
+	pod2usage({ -message => "$0 version $HTML::TextToHTML::VERSION",
 		    -exitval => 0,
 		    -verbose => 1,
 	    });

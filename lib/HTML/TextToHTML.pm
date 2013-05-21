@@ -1,6 +1,6 @@
 package HTML::TextToHTML;
 {
-  $HTML::TextToHTML::VERSION = '2.52';
+  $HTML::TextToHTML::VERSION = '2.5201';
 }
 use 5.8.1;
 use strict;
@@ -12,7 +12,7 @@ HTML::TextToHTML - convert plain text file to HTML.
 
 =head1 VERSION
 
-version 2.52
+version 2.5201
 
 =head1 SYNOPSIS
 
